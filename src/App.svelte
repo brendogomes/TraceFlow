@@ -1,6 +1,6 @@
 <script>
   import { onMount, onDestroy } from "svelte";
-  import { fade, fly } from "svelte/transition";
+  import { fade, fly, slide } from "svelte/transition";
   import { quintOut } from "svelte/easing";
 
   let requests = [];
@@ -11,6 +11,7 @@
   let debounceTimeout;
   let currentTabId = null;
   let messageListener;
+  let expandedRequestId = null;  // Para controlar qual card está expandido
 
   // Função para salvar as requests no sessionStorage
   function saveRequests(updatedRequests) {
@@ -261,6 +262,10 @@
     </svg>`;
   }
 
+  function toggleRequest(requestId) {
+    expandedRequestId = expandedRequestId === requestId ? null : requestId;
+  }
+
   onMount(async () => {
     // Inicializa a aba atual e configura os listeners
     await updateCurrentTab();
@@ -358,6 +363,11 @@
                 <!-- Request card -->
                 <div
                   class="bg-white p-4 rounded-lg shadow-sm border border-gray-200 hover:border-gray-300 hover:shadow-lg transition-all duration-200 ease-in-out transform hover:-translate-y-0.5 cursor-pointer"
+                  on:click={() => toggleRequest(request.id)}
+                  on:keydown={(e) => e.key === 'Enter' && toggleRequest(request.id)}
+                  tabindex="0"
+                  role="button"
+                  aria-expanded={expandedRequestId === request.id}
                 >
                   <div class="flex items-center justify-between">
                     <div class="flex items-center space-x-2">
@@ -387,6 +397,48 @@
                       {removeQueryParams(request.url)}
                     </p>
                   </div>
+
+                  <!-- Dropdown content -->
+                  {#if expandedRequestId === request.id}
+                    <div
+                      class="mt-4 pt-4 border-t border-gray-100"
+                      transition:slide={{ duration: 200 }}
+                    >
+                      <div class="space-y-3">
+                        <!-- Request Details -->
+                        <div>
+                          <h4 class="text-sm font-medium text-gray-700">Request Details</h4>
+                          <div class="mt-1 space-y-2">
+                            <p class="text-sm text-gray-600">
+                              <span class="font-medium">Full URL:</span>
+                              <span class="ml-2 break-all">{request.url}</span>
+                            </p>
+                            <p class="text-sm text-gray-600">
+                              <span class="font-medium">Type:</span>
+                              <span class="ml-2">{request.type}</span>
+                            </p>
+                            <p class="text-sm text-gray-600">
+                              <span class="font-medium">Time:</span>
+                              <span class="ml-2">{request.timestamp}</span>
+                            </p>
+                          </div>
+                        </div>
+
+                        <!-- Response Details if available -->
+                        {#if request.status && request.status !== 'pending'}
+                          <div>
+                            <h4 class="text-sm font-medium text-gray-700">Response Details</h4>
+                            <div class="mt-1">
+                              <p class="text-sm text-gray-600">
+                                <span class="font-medium">Status:</span>
+                                <span class="ml-2">{request.status}</span>
+                              </p>
+                            </div>
+                          </div>
+                        {/if}
+                      </div>
+                    </div>
+                  {/if}
                 </div>
               </div>
             {/each}
