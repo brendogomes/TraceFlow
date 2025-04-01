@@ -1,10 +1,14 @@
-html,
-body {
+html {
   position: relative;
   margin: 0;
   padding: 0;
   width: 600px;
   height: 600px;
+}
+
+body {
+  margin: 0;
+  padding: 0;
 }
 
 a {
@@ -58,4 +62,38 @@ button:not(:disabled):active {
 
 button:focus {
   border-color: #666;
+}
+
+/* Estilo da scrollbar para tema light */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a1a1a1;
+}
+
+/* Estilo da scrollbar para tema dark */
+@media (prefers-color-scheme: dark) {
+  ::-webkit-scrollbar-track {
+    background: #1f2937;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #4b5563;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #6b7280;
+  }
 }
