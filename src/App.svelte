@@ -342,12 +342,12 @@
                 <!-- Timeline dot -->
                 <div
                   class="absolute left-[0.7rem] top-[50%] -translate-y-[50%] w-[2rem] h-[2rem] rounded-full border-2 flex items-center justify-center {getStatusClass(
-                    request.status
+                    request.status || 'pending'
                   )
                     .replace('bg-', 'border-')
                     .replace('text-', 'border-')} bg-white z-10"
                 >
-                  {@html getStatusIcon(request.status)}
+                  {@html getStatusIcon(request.status || 'pending')}
                 </div>
 
                 <!-- Timeline vertical line -->
@@ -374,11 +374,13 @@
                         >{request.timestamp}</span
                       >
                     </div>
-                    <span
-                      class="px-2 py-1 rounded text-xs font-medium {getStatusClass(
-                        request.status
-                      )}">{request.statusText}</span
-                    >
+                    {#if request.status && request.status !== 'undefined'}
+                      <span
+                        class="px-2 py-1 rounded text-xs font-medium {getStatusClass(
+                          request.status
+                        )}">{request.status}</span
+                      >
+                    {/if}
                   </div>
                   <div class="mt-2">
                     <p class="text-sm text-gray-800 break-all">
