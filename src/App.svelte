@@ -558,240 +558,264 @@
                       {request.url}
                     </p>
                   </div>
-
-                  <!-- Dropdown content -->
-                  {#if expandedRequestId === request.id}
-                    <div
-                      class="mt-4 pt-4 {isDarkMode
-                        ? 'border-gray-700'
-                        : 'border-gray-100'} border-t"
-                      transition:slide={{ duration: 200 }}
-                    >
-                      <div class="space-y-3">
-                        <!-- Request Details -->
-                        <div>
-                          <h4
+                </div>
+                <!-- Dropdown content -->
+                {#if expandedRequestId === request.id}
+                  <div
+                    class="mt-4 pt-4 {isDarkMode
+                      ? 'border-gray-700'
+                      : 'border-gray-100'} border-t"
+                    transition:slide={{ duration: 200 }}
+                  >
+                    <div class="space-y-3">
+                      <!-- Request Details -->
+                      <div>
+                        <h4
+                          class="{isDarkMode
+                            ? 'text-gray-300'
+                            : 'text-gray-700'} text-sm font-medium"
+                        >
+                          Request Details
+                        </h4>
+                        <div class="mt-1 space-y-2">
+                          <p
                             class="{isDarkMode
-                              ? 'text-gray-300'
-                              : 'text-gray-700'} text-sm font-medium"
+                              ? 'text-gray-400'
+                              : 'text-gray-600'} text-sm"
                           >
-                            Request Details
-                          </h4>
-                          <div class="mt-1 space-y-2">
-                            <p
-                              class="{isDarkMode
-                                ? 'text-gray-400'
-                                : 'text-gray-600'} text-sm"
-                            >
-                              <span class="font-medium">Full URL:</span>
-                              <span class="ml-2 break-all">{request.url}</span>
-                            </p>
+                            <span class="font-medium">Full URL:</span>
+                            <span class="ml-2 break-all">{request.url}</span>
+                          </p>
 
-                            <!-- Query Parameters Section -->
-                            {#if formatQueryParams(request.url).hasParams}
-                              <div class="mt-2">
-                                <div class="flex justify-between items-center">
-                                  <span class="text-sm font-medium {isDarkMode ? 'text-gray-300' : 'text-gray-700'}">
-                                    Query Parameters:
-                                  </span>
-                                  <button
-                                    class="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600"
-                                    on:click|stopPropagation={() => {
-                                      const params = formatQueryParams(request.url).params;
-                                      const text = params.map(p => `${p.key}: ${p.value}`).join('\n');
-                                      copyToClipboard(text, `${request.id}-params`);
-                                    }}
-                                    title="Copy to clipboard"
-                                  >
-                                    {#if copiedStates[`${request.id}-params`]}
-                                      <svg
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        class="h-4 w-4 text-green-500"
-                                        viewBox="0 0 20 20"
-                                        fill="currentColor"
-                                      >
-                                        <path
-                                          fill-rule="evenodd"
-                                          d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                          clip-rule="evenodd"
-                                        />
-                                      </svg>
-                                    {:else}
-                                      <svg
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        class="h-4 w-4 {isDarkMode ? 'text-gray-400' : 'text-gray-600'}"
-                                        viewBox="0 0 20 20"
-                                        fill="currentColor"
-                                      >
-                                        <path
-                                          d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z"
-                                        />
-                                        <path
-                                          d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z"
-                                        />
-                                      </svg>
-                                    {/if}
-                                  </button>
-                                </div>
-                                <div class="mt-1 rounded p-2 {isDarkMode ? 'bg-gray-700' : 'bg-gray-50'}">
-                                  <div class="text-xs {isDarkMode ? 'text-gray-300' : 'text-gray-700'}">
-                                    {#each formatQueryParams(request.url).params as param}
-                                      <div class="flex items-start py-1">
-                                        <span class="font-medium">{param.key}:</span>
-                                        <span class="ml-2 break-all">{param.value}</span>
-                                      </div>
-                                    {/each}
-                                  </div>
-                                </div>
-                              </div>
-                            {/if}
-
-                            <!-- Request Payload -->
-                            {#if request.requestBody}
-                              <div class="mt-2">
-                                <div class="flex justify-between items-center">
-                                  <span
-                                    class="text-sm font-medium {isDarkMode
-                                      ? 'text-gray-300'
-                                      : 'text-gray-700'}">Request Payload:</span
-                                  >
-                                  <button
-                                    class="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600"
-                                    on:click|stopPropagation={() =>
-                                      copyToClipboard(
-                                        JSON.stringify(
-                                          request.requestBody,
-                                          null,
-                                          2
-                                        ),
-                                        `${request.id}-request`
-                                      )}
-                                    title="Copy to clipboard"
-                                  >
-                                    {#if copiedStates[`${request.id}-request`]}
-                                      <svg
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        class="h-4 w-4 text-green-500"
-                                        viewBox="0 0 20 20"
-                                        fill="currentColor"
-                                      >
-                                        <path
-                                          fill-rule="evenodd"
-                                          d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                          clip-rule="evenodd"
-                                        />
-                                      </svg>
-                                    {:else}
-                                      <svg
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        class="h-4 w-4 {isDarkMode
-                                          ? 'text-gray-400'
-                                          : 'text-gray-600'}"
-                                        viewBox="0 0 20 20"
-                                        fill="currentColor"
-                                      >
-                                        <path
-                                          d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z"
-                                        />
-                                        <path
-                                          d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z"
-                                        />
-                                      </svg>
-                                    {/if}
-                                  </button>
-                                </div>
-                                <div
-                                  class="mt-1 rounded p-2 {isDarkMode
-                                    ? 'bg-gray-700'
-                                    : 'bg-gray-50'} max-h-[200px] overflow-y-auto"
+                          <!-- Query Parameters Section -->
+                          {#if formatQueryParams(request.url).hasParams}
+                            <div class="mt-2">
+                              <div class="flex justify-between items-center">
+                                <span
+                                  class="text-sm font-medium {isDarkMode
+                                    ? 'text-gray-300'
+                                    : 'text-gray-700'}"
                                 >
-                                  <pre
-                                    class="text-xs overflow-x-auto {isDarkMode
-                                      ? 'text-gray-300'
-                                      : 'text-gray-700'}">{JSON.stringify(
-                                      request.requestBody,
-                                      null,
-                                      2
-                                    )}</pre>
-                                </div>
-                              </div>
-                            {/if}
-
-                            {#if request.responseBody}
-                              <div class="mt-2">
-                                <div class="flex justify-between items-center">
-                                  <span
-                                    class="text-sm font-medium {isDarkMode
-                                      ? 'text-gray-300'
-                                      : 'text-gray-700'}">Response Body:</span
-                                  >
-                                  <button
-                                    class="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600"
-                                    on:click|stopPropagation={() =>
-                                      copyToClipboard(
-                                        JSON.stringify(
-                                          request.responseBody,
-                                          null,
-                                          2
-                                        ),
-                                        `${request.id}-response`
-                                      )}
-                                    title="Copy to clipboard"
-                                  >
-                                    {#if copiedStates[`${request.id}-response`]}
-                                      <svg
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        class="h-4 w-4 text-green-500"
-                                        viewBox="0 0 20 20"
-                                        fill="currentColor"
-                                      >
-                                        <path
-                                          fill-rule="evenodd"
-                                          d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                          clip-rule="evenodd"
-                                        />
-                                      </svg>
-                                    {:else}
-                                      <svg
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        class="h-4 w-4 {isDarkMode
-                                          ? 'text-gray-400'
-                                          : 'text-gray-600'}"
-                                        viewBox="0 0 20 20"
-                                        fill="currentColor"
-                                      >
-                                        <path
-                                          d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z"
-                                        />
-                                        <path
-                                          d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z"
-                                        />
-                                      </svg>
-                                    {/if}
-                                  </button>
-                                </div>
-                                <div
-                                  class="mt-1 rounded p-2 {isDarkMode
-                                    ? 'bg-gray-700'
-                                    : 'bg-gray-50'} max-h-[200px] overflow-y-auto"
+                                  Query Parameters:
+                                </span>
+                                <button
+                                  class="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600"
+                                  on:click|stopPropagation={() => {
+                                    const params = formatQueryParams(
+                                      request.url
+                                    ).params;
+                                    const text = params
+                                      .map((p) => `${p.key}: ${p.value}`)
+                                      .join("\n");
+                                    copyToClipboard(
+                                      text,
+                                      `${request.id}-params`
+                                    );
+                                  }}
+                                  title="Copy to clipboard"
                                 >
-                                  <pre
-                                    class="text-xs overflow-x-auto {isDarkMode
-                                      ? 'text-gray-300'
-                                      : 'text-gray-700'}">{JSON.stringify(
-                                      request.responseBody,
-                                      null,
-                                      2
-                                    )}</pre>
+                                  {#if copiedStates[`${request.id}-params`]}
+                                    <svg
+                                      xmlns="http://www.w3.org/2000/svg"
+                                      class="h-4 w-4 text-green-500"
+                                      viewBox="0 0 20 20"
+                                      fill="currentColor"
+                                    >
+                                      <path
+                                        fill-rule="evenodd"
+                                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                        clip-rule="evenodd"
+                                      />
+                                    </svg>
+                                  {:else}
+                                    <svg
+                                      xmlns="http://www.w3.org/2000/svg"
+                                      class="h-4 w-4 {isDarkMode
+                                        ? 'text-gray-400'
+                                        : 'text-gray-600'}"
+                                      viewBox="0 0 20 20"
+                                      fill="currentColor"
+                                    >
+                                      <path
+                                        d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z"
+                                      />
+                                      <path
+                                        d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z"
+                                      />
+                                    </svg>
+                                  {/if}
+                                </button>
+                              </div>
+                              <div
+                                class="mt-1 rounded p-2 {isDarkMode
+                                  ? 'bg-gray-700'
+                                  : 'bg-gray-50'}"
+                              >
+                                <div
+                                  class="text-xs {isDarkMode
+                                    ? 'text-gray-300'
+                                    : 'text-gray-700'}"
+                                >
+                                  {#each formatQueryParams(request.url).params as param}
+                                    <div class="flex items-start py-1">
+                                      <span class="font-medium"
+                                        >{param.key}:</span
+                                      >
+                                      <span class="ml-2 break-all"
+                                        >{param.value}</span
+                                      >
+                                    </div>
+                                  {/each}
                                 </div>
                               </div>
-                            {/if}
-                          </div>
+                            </div>
+                          {/if}
+
+                          <!-- Request Payload -->
+                          {#if request.requestBody}
+                            <div class="mt-2">
+                              <div class="flex justify-between items-center">
+                                <span
+                                  class="text-sm font-medium {isDarkMode
+                                    ? 'text-gray-300'
+                                    : 'text-gray-700'}">Request Payload:</span
+                                >
+                                <button
+                                  class="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600"
+                                  on:click|stopPropagation={() =>
+                                    copyToClipboard(
+                                      JSON.stringify(
+                                        request.requestBody,
+                                        null,
+                                        2
+                                      ),
+                                      `${request.id}-request`
+                                    )}
+                                  title="Copy to clipboard"
+                                >
+                                  {#if copiedStates[`${request.id}-request`]}
+                                    <svg
+                                      xmlns="http://www.w3.org/2000/svg"
+                                      class="h-4 w-4 text-green-500"
+                                      viewBox="0 0 20 20"
+                                      fill="currentColor"
+                                    >
+                                      <path
+                                        fill-rule="evenodd"
+                                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                        clip-rule="evenodd"
+                                      />
+                                    </svg>
+                                  {:else}
+                                    <svg
+                                      xmlns="http://www.w3.org/2000/svg"
+                                      class="h-4 w-4 {isDarkMode
+                                        ? 'text-gray-400'
+                                        : 'text-gray-600'}"
+                                      viewBox="0 0 20 20"
+                                      fill="currentColor"
+                                    >
+                                      <path
+                                        d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z"
+                                      />
+                                      <path
+                                        d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z"
+                                      />
+                                    </svg>
+                                  {/if}
+                                </button>
+                              </div>
+                              <div
+                                class="mt-1 rounded p-2 {isDarkMode
+                                  ? 'bg-gray-700'
+                                  : 'bg-gray-50'} max-h-[200px] overflow-y-auto"
+                              >
+                                <pre
+                                  class="text-xs overflow-x-auto {isDarkMode
+                                    ? 'text-gray-300'
+                                    : 'text-gray-700'}">{JSON.stringify(
+                                    request.requestBody,
+                                    null,
+                                    2
+                                  )}</pre>
+                              </div>
+                            </div>
+                          {/if}
+
+                          {#if request.responseBody}
+                            <div class="mt-2">
+                              <div class="flex justify-between items-center">
+                                <span
+                                  class="text-sm font-medium {isDarkMode
+                                    ? 'text-gray-300'
+                                    : 'text-gray-700'}">Response Body:</span
+                                >
+                                <button
+                                  class="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600"
+                                  on:click|stopPropagation={() =>
+                                    copyToClipboard(
+                                      JSON.stringify(
+                                        request.responseBody,
+                                        null,
+                                        2
+                                      ),
+                                      `${request.id}-response`
+                                    )}
+                                  title="Copy to clipboard"
+                                >
+                                  {#if copiedStates[`${request.id}-response`]}
+                                    <svg
+                                      xmlns="http://www.w3.org/2000/svg"
+                                      class="h-4 w-4 text-green-500"
+                                      viewBox="0 0 20 20"
+                                      fill="currentColor"
+                                    >
+                                      <path
+                                        fill-rule="evenodd"
+                                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                        clip-rule="evenodd"
+                                      />
+                                    </svg>
+                                  {:else}
+                                    <svg
+                                      xmlns="http://www.w3.org/2000/svg"
+                                      class="h-4 w-4 {isDarkMode
+                                        ? 'text-gray-400'
+                                        : 'text-gray-600'}"
+                                      viewBox="0 0 20 20"
+                                      fill="currentColor"
+                                    >
+                                      <path
+                                        d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z"
+                                      />
+                                      <path
+                                        d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z"
+                                      />
+                                    </svg>
+                                  {/if}
+                                </button>
+                              </div>
+                              <div
+                                class="mt-1 rounded p-2 {isDarkMode
+                                  ? 'bg-gray-700'
+                                  : 'bg-gray-50'} max-h-[200px] overflow-y-auto"
+                              >
+                                <pre
+                                  class="text-xs overflow-x-auto {isDarkMode
+                                    ? 'text-gray-300'
+                                    : 'text-gray-700'}">{JSON.stringify(
+                                    request.responseBody,
+                                    null,
+                                    2
+                                  )}</pre>
+                              </div>
+                            </div>
+                          {/if}
                         </div>
                       </div>
                     </div>
-                  {/if}
-                </div>
+                  </div>
+                {/if}
               </div>
             {/each}
           </div>
