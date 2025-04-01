@@ -16,7 +16,7 @@
   let copiedStates = {};
   let searchQuery = "";
   let statusFilter = "all"; // novo estado para o filtro
-  
+
   // Função para salvar as requests no sessionStorage
   function saveRequests(updatedRequests) {
     try {
@@ -127,21 +127,26 @@
   }
 
   // Função para filtrar as requests
-  $: filteredRequests = requests.filter(request => {
+  $: filteredRequests = requests.filter((request) => {
     // Primeiro aplica o filtro de status
     if (statusFilter === "error" && (!request.status || request.status < 400)) {
       return false;
     }
-    if (statusFilter === "success" && (!request.status || request.status < 200 || request.status >= 400)) {
+    if (
+      statusFilter === "success" &&
+      (!request.status || request.status < 200 || request.status >= 400)
+    ) {
       return false;
     }
 
     // Depois aplica o filtro de texto se existir
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase().trim();
-      return request.url.toLowerCase().includes(query) ||
-             request.method.toLowerCase().includes(query) ||
-             String(request.status).includes(query);
+      return (
+        request.url.toLowerCase().includes(query) ||
+        request.method.toLowerCase().includes(query) ||
+        String(request.status).includes(query)
+      );
     }
 
     return true;
@@ -340,7 +345,7 @@
   <div class="h-full flex flex-col">
     <!-- Header -->
     <div
-      class="flex-none w-[600px] px-4 py-3 border-b {isDarkMode
+      class="flex-none w-[600px] px-4 py-3 pb-0 border-b {isDarkMode
         ? 'border-gray-700 bg-gray-800'
         : 'border-gray-200 bg-white'}"
     >
@@ -371,17 +376,23 @@
                 value="all"
                 bind:group={statusFilter}
               />
-              <div class="w-4 h-4 border-2 rounded-full transition-colors duration-200 
-                {isDarkMode 
-                  ? 'border-gray-600 peer-checked:border-blue-500' 
+              <div
+                class="w-4 h-4 border-2 rounded-full transition-colors duration-200
+                {isDarkMode
+                  ? 'border-gray-600 peer-checked:border-blue-500'
                   : 'border-gray-300 peer-checked:border-blue-600'} 
-                peer-checked:bg-current relative flex items-center justify-center">
-                <div class="w-2 h-2 rounded-full bg-blue-500 opacity-0 peer-checked:opacity-100 transition-opacity duration-200"></div>
+                peer-checked:bg-current relative flex items-center justify-center"
+              >
+                <div
+                  class="w-2 h-2 rounded-full bg-blue-500 opacity-0 peer-checked:opacity-100 transition-opacity duration-200"
+                ></div>
               </div>
-              <span class="ml-2 text-sm font-medium transition-colors duration-200 
-                {isDarkMode 
-                  ? 'text-gray-300 group-hover:text-gray-200' 
-                  : 'text-gray-700 group-hover:text-gray-900'}">All</span>
+              <span
+                class="ml-2 text-sm font-medium transition-colors duration-200
+                {isDarkMode
+                  ? 'text-gray-300 group-hover:text-gray-200'
+                  : 'text-gray-700 group-hover:text-gray-900'}">All</span
+              >
             </label>
 
             <label class="relative flex items-center group cursor-pointer">
@@ -392,17 +403,23 @@
                 value="success"
                 bind:group={statusFilter}
               />
-              <div class="w-4 h-4 border-2 rounded-full transition-colors duration-200 
-                {isDarkMode 
-                  ? 'border-gray-600 peer-checked:border-green-500' 
+              <div
+                class="w-4 h-4 border-2 rounded-full transition-colors duration-200
+                {isDarkMode
+                  ? 'border-gray-600 peer-checked:border-green-500'
                   : 'border-gray-300 peer-checked:border-green-600'} 
-                peer-checked:bg-current relative flex items-center justify-center">
-                <div class="w-2 h-2 rounded-full bg-green-500 opacity-0 peer-checked:opacity-100 transition-opacity duration-200"></div>
+                peer-checked:bg-current relative flex items-center justify-center"
+              >
+                <div
+                  class="w-2 h-2 rounded-full bg-green-500 opacity-0 peer-checked:opacity-100 transition-opacity duration-200"
+                ></div>
               </div>
-              <span class="ml-2 text-sm font-medium transition-colors duration-200 
-                {isDarkMode 
-                  ? 'text-gray-300 group-hover:text-gray-200' 
-                  : 'text-gray-700 group-hover:text-gray-900'}">Success</span>
+              <span
+                class="ml-2 text-sm font-medium transition-colors duration-200
+                {isDarkMode
+                  ? 'text-gray-300 group-hover:text-gray-200'
+                  : 'text-gray-700 group-hover:text-gray-900'}">Success</span
+              >
             </label>
 
             <label class="relative flex items-center group cursor-pointer">
@@ -413,17 +430,23 @@
                 value="error"
                 bind:group={statusFilter}
               />
-              <div class="w-4 h-4 border-2 rounded-full transition-colors duration-200 
-                {isDarkMode 
-                  ? 'border-gray-600 peer-checked:border-red-500' 
+              <div
+                class="w-4 h-4 border-2 rounded-full transition-colors duration-200
+                {isDarkMode
+                  ? 'border-gray-600 peer-checked:border-red-500'
                   : 'border-gray-300 peer-checked:border-red-600'} 
-                peer-checked:bg-current relative flex items-center justify-center">
-                <div class="w-2 h-2 rounded-full bg-red-500 opacity-0 peer-checked:opacity-100 transition-opacity duration-200"></div>
+                peer-checked:bg-current relative flex items-center justify-center"
+              >
+                <div
+                  class="w-2 h-2 rounded-full bg-red-500 opacity-0 peer-checked:opacity-100 transition-opacity duration-200"
+                ></div>
               </div>
-              <span class="ml-2 text-sm font-medium transition-colors duration-200 
-                {isDarkMode 
-                  ? 'text-gray-300 group-hover:text-gray-200' 
-                  : 'text-gray-700 group-hover:text-gray-900'}">Error</span>
+              <span
+                class="ml-2 text-sm font-medium transition-colors duration-200
+                {isDarkMode
+                  ? 'text-gray-300 group-hover:text-gray-200'
+                  : 'text-gray-700 group-hover:text-gray-900'}">Error</span
+              >
             </label>
           </div>
         </div>
