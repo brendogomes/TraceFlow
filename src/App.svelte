@@ -11,7 +11,7 @@
   let debounceTimeout;
   let currentTabId = null;
   let messageListener;
-  let expandedRequestId = null;  // Para controlar qual card está expandido
+  let expandedRequestId = null; // Para controlar qual card está expandido
 
   // Função para salvar as requests no sessionStorage
   function saveRequests(updatedRequests) {
@@ -303,10 +303,10 @@
   });
 </script>
 
-<main class="w-[800px] h-[600px] bg-white">
+<main class="w-[600px] h-[600px] bg-white">
   <div class="h-full flex flex-col">
     <!-- Header -->
-    <div class="flex-none w-[750px] px-4 py-3 border-b border-gray-200">
+    <div class="flex-none w-[600px] px-4 py-3 border-b border-gray-200">
       <h1 class="text-lg font-medium text-gray-900">
         TraceFlow - HTTP Request Monitor
       </h1>
@@ -321,7 +321,7 @@
     </div>
 
     <!-- Timeline -->
-    <div class="flex-1 w-[750px] overflow-y-auto pl-2 p-4">
+    <div class="flex-1 w-[600px] overflow-y-auto pl-2 p-4">
       {#if requests.length === 0}
         <div class="text-center text-sm text-gray-500 mt-4">
           No requests captured yet. Browse some pages to see the requests.
@@ -352,7 +352,7 @@
                     .replace('bg-', 'border-')
                     .replace('text-', 'border-')} bg-white z-10"
                 >
-                  {@html getStatusIcon(request.status || 'pending')}
+                  {@html getStatusIcon(request.status || "pending")}
                 </div>
 
                 <!-- Timeline vertical line -->
@@ -362,9 +362,10 @@
 
                 <!-- Request card -->
                 <div
-                  class="bg-white p-4 rounded-lg shadow-sm border border-gray-200 hover:border-gray-300 hover:shadow-lg transition-all duration-200 ease-in-out transform hover:-translate-y-0.5 cursor-pointer"
+                  class="bg-white p-2 rounded-lg shadow-sm border border-gray-200 hover:border-gray-300 hover:shadow-lg transition-all duration-200 ease-in-out transform hover:-translate-y-0.5 cursor-pointer"
                   on:click={() => toggleRequest(request.id)}
-                  on:keydown={(e) => e.key === 'Enter' && toggleRequest(request.id)}
+                  on:keydown={(e) =>
+                    e.key === "Enter" && toggleRequest(request.id)}
                   tabindex="0"
                   role="button"
                   aria-expanded={expandedRequestId === request.id}
@@ -384,7 +385,7 @@
                         >{request.timestamp}</span
                       >
                     </div>
-                    {#if request.status && request.status !== 'undefined'}
+                    {#if request.status && request.status !== "undefined"}
                       <span
                         class="px-2 py-1 rounded text-xs font-medium {getStatusClass(
                           request.status
@@ -393,7 +394,7 @@
                     {/if}
                   </div>
                   <div class="mt-2">
-                    <p class="text-sm text-gray-800 break-all">
+                    <p class="text-sm text-gray-800 truncate">
                       {removeQueryParams(request.url)}
                     </p>
                   </div>
@@ -407,7 +408,9 @@
                       <div class="space-y-3">
                         <!-- Request Details -->
                         <div>
-                          <h4 class="text-sm font-medium text-gray-700">Request Details</h4>
+                          <h4 class="text-sm font-medium text-gray-700">
+                            Request Details
+                          </h4>
                           <div class="mt-1 space-y-2">
                             <p class="text-sm text-gray-600">
                               <span class="font-medium">Full URL:</span>
@@ -425,9 +428,11 @@
                         </div>
 
                         <!-- Response Details if available -->
-                        {#if request.status && request.status !== 'pending'}
+                        {#if request.status && request.status !== "pending"}
                           <div>
-                            <h4 class="text-sm font-medium text-gray-700">Response Details</h4>
+                            <h4 class="text-sm font-medium text-gray-700">
+                              Response Details
+                            </h4>
                             <div class="mt-1">
                               <p class="text-sm text-gray-600">
                                 <span class="font-medium">Status:</span>
