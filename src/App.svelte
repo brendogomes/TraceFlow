@@ -4,9 +4,9 @@
   import { quintOut } from "svelte/easing";
 
   let requests = [];
+  let pendingRequests = [];
   let filter = "";
   let debouncedFilter = "";
-  let expandedRows = [];
   let filteredRequests = [];
   let debounceTimeout;
   let currentTabId = null;
@@ -16,6 +16,8 @@
   let copiedStates = {};
   let searchQuery = "";
   let statusFilter = "all"; // novo estado para o filtro
+  let requestListContainer;
+  let expandedCardPosition = null;
 
   // Função para salvar as requests no sessionStorage
   function saveRequests(updatedRequests) {
@@ -74,8 +76,8 @@
         message.type === "REQUEST_UPDATE" &&
         (!sender.tab || sender.tab.id === currentTabId)
       ) {
-        requests = message.requests;
-        saveRequests(requests);
+        updateRequests(message.requests);
+        saveRequests(message.requests);
       }
     };
 
@@ -99,6 +101,19 @@
     } catch (error) {
       console.error("Error updating current tab:", error);
     }
+  }
+
+  // Função para atualizar as requests
+  function updateRequests(newRequests) {
+    // Se tiver um card expandido, guarda as novas requests
+    if (expandedRequestId) {
+      pendingRequests = newRequests;
+      return;
+    }
+
+    // Se não tiver card expandido, atualiza normalmente
+    requests = newRequests;
+    pendingRequests = [];
   }
 
   // Função de debounce para o filtro
@@ -141,34 +156,52 @@
     return true;
   });
 
-  function toggleRow(id) {
-    const index = expandedRows.indexOf(id);
-    if (index === -1) {
-      expandedRows = [...expandedRows, id];
-    } else {
-      expandedRows = expandedRows.filter((rowId) => rowId !== id);
+  // Função para salvar a posição do card expandido
+  function saveExpandedCardPosition() {
+    if (expandedRequestId && requestListContainer) {
+      const card = requestListContainer.querySelector(
+        `[data-request-id="${expandedRequestId}"]`
+      );
+      if (card) {
+        expandedCardPosition = {
+          id: expandedRequestId,
+          rect: card.getBoundingClientRect(),
+        };
+      }
     }
   }
 
-  function isExpanded(id) {
-    return expandedRows.includes(id);
+  // Função para restaurar a posição do card expandido
+  function restoreExpandedCardPosition() {
+    if (expandedCardPosition && requestListContainer) {
+      const card = requestListContainer.querySelector(
+        `[data-request-id="${expandedCardPosition.id}"]`
+      );
+      if (card) {
+        const newRect = card.getBoundingClientRect();
+        const deltaY = newRect.top - expandedCardPosition.rect.top;
+        if (deltaY !== 0) {
+          requestListContainer.scrollTop =
+            requestListContainer.scrollTop + deltaY;
+        }
+      }
+    }
   }
 
-  function getMethodClass(method) {
-    switch (method.toUpperCase()) {
-      case "GET":
-        return "bg-blue-100 text-blue-800"; // Swagger blue
-      case "POST":
-        return "bg-green-100 text-green-800"; // Swagger green
-      case "PUT":
-        return "bg-amber-100 text-amber-800"; // Swagger orange
-      case "DELETE":
-        return "bg-red-100 text-red-800"; // Swagger red
-      case "PATCH":
-        return "bg-gray-100 text-gray-800";
-      default:
-        return "bg-gray-100 text-gray-800";
+  // Função para atualizar as requests preservando a posição do card expandido
+  function updateRequestsWithScroll(newRequests) {
+    if (expandedRequestId) {
+      saveExpandedCardPosition();
     }
+
+    requests = newRequests;
+
+    // Use nextTick para garantir que o DOM foi atualizado
+    setTimeout(() => {
+      if (expandedRequestId) {
+        restoreExpandedCardPosition();
+      }
+    }, 0);
   }
 
   function formatQueryParams(url) {
@@ -192,17 +225,6 @@
         params: [],
         hasParams: false,
       };
-    }
-  }
-
-  // Função para remover query params da URL
-  function removeQueryParams(url) {
-    try {
-      const urlObj = new URL(url);
-      return urlObj.origin + urlObj.pathname;
-    } catch (e) {
-      // Se não for uma URL válida, retorna a original
-      return url;
     }
   }
 
@@ -255,7 +277,16 @@
   }
 
   function toggleRequest(requestId) {
-    expandedRequestId = expandedRequestId === requestId ? null : requestId;
+    if (expandedRequestId === requestId) {
+      expandedRequestId = null;
+      // Quando fecha o card, atualiza com as requests pendentes
+      if (pendingRequests.length > 0) {
+        requests = pendingRequests;
+        pendingRequests = [];
+      }
+    } else {
+      expandedRequestId = requestId;
+    }
   }
 
   // Função para copiar para o clipboard
@@ -457,6 +488,7 @@
       class="flex-1 w-[600px] overflow-y-auto pl-2 p-4 {isDarkMode
         ? 'bg-gray-900'
         : 'bg-white'}"
+      bind:this={requestListContainer}
     >
       {#if requests.length === 0}
         <div
@@ -480,13 +512,11 @@
             {#each filteredRequests as request, index}
               <div
                 class="relative pl-14"
+                data-request-id={request.id}
                 in:fly|local={{
                   y: -20,
-                  duration: 800,
-                  delay: index * 150,
-                  easing: quintOut,
+                  duration: 200,
                 }}
-                out:fade|local={{ duration: 800 }}
               >
                 <!-- Timeline dot -->
                 <div
