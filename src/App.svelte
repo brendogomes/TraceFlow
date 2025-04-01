@@ -10,12 +10,11 @@
   let filteredRequests = [];
   let debounceTimeout;
   let currentTabId = null;
-  let messageListener;
-  let expandedRequestId = null; // Para controlar qual card está expandido
   let isDarkMode = false;
   let copiedStates = {};
   let searchQuery = "";
-  let statusFilter = "all"; // novo estado para o filtro
+  let statusFilter = "all";
+  let expandedRequestId = null; // Para controlar qual card está expandido
 
   // Função para salvar as requests no sessionStorage
   function saveRequests(updatedRequests) {
@@ -165,6 +164,10 @@
     return expandedRows.includes(id);
   }
 
+  function toggleRequest(requestId) {
+    expandedRequestId = expandedRequestId === requestId ? null : requestId;
+  }
+
   function getMethodClass(method) {
     switch (method.toUpperCase()) {
       case "GET":
@@ -185,24 +188,14 @@
   function formatQueryParams(url) {
     try {
       const urlObj = new URL(url);
-      const params = new URLSearchParams(urlObj.search);
-      const formattedParams = [];
-
-      for (const [key, value] of params.entries()) {
-        formattedParams.push({ key, value });
-      }
-
-      return {
-        baseUrl: `${urlObj.protocol}//${urlObj.host}${urlObj.pathname}`,
-        params: formattedParams,
-        hasParams: formattedParams.length > 0,
-      };
-    } catch {
-      return {
-        baseUrl: url,
-        params: [],
-        hasParams: false,
-      };
+      const params = [];
+      urlObj.searchParams.forEach((value, key) => {
+        params.push(`${key}: ${value}`);
+      });
+      return params.length > 0 ? params : null;
+    } catch (error) {
+      console.error('Error parsing URL:', error);
+      return null;
     }
   }
 
@@ -265,8 +258,13 @@
     </svg>`;
   }
 
-  function toggleRequest(requestId) {
-    expandedRequestId = expandedRequestId === requestId ? null : requestId;
+  function getStatusColor(status) {
+    if (!status) return isDarkMode ? 'bg-gray-500' : 'bg-gray-400';
+    const statusCode = parseInt(status);
+    if (statusCode < 300) return 'bg-green-500';
+    if (statusCode < 400) return 'bg-blue-500';
+    if (statusCode < 500) return 'bg-yellow-500';
+    return 'bg-red-500';
   }
 
   // Função para copiar para o clipboard
@@ -299,6 +297,29 @@
       .addEventListener("change", (event) => {
         isDarkMode = event.matches;
       });
+  }
+
+  function parseQueryParams(url) {
+    try {
+      const urlObj = new URL(url);
+      const params = [];
+      urlObj.searchParams.forEach((value, key) => {
+        params.push(`${key}: ${value}`);
+      });
+      return params.length > 0 ? params : null;
+    } catch (error) {
+      console.error('Error parsing URL:', error);
+      return null;
+    }
+  }
+
+  function formatJson(obj) {
+    try {
+      return JSON.stringify(obj, null, 2);
+    } catch (error) {
+      console.error('Error formatting JSON:', error);
+      return '';
+    }
   }
 
   onMount(async () => {
@@ -575,28 +596,7 @@
                               ? 'text-gray-300'
                               : 'text-gray-700'} text-sm font-medium"
                           >
-                            Request Details
-                          </h4>
-                          <div class="mt-1 space-y-2">
-                            <p
-                              class="{isDarkMode
-                                ? 'text-gray-400'
-                                : 'text-gray-600'} text-sm"
-                            >
-                              <span class="font-medium">Full URL:</span>
-                              <span class="ml-2 break-all">{request.url}</span>
-                            </p>
-                          </div>
-                        </div>
-
-                        <!-- Response Details if available -->
-                        <div>
-                          <h4
-                            class="{isDarkMode
-                              ? 'text-gray-300'
-                              : 'text-gray-700'} text-sm font-medium"
-                          >
-                            Response Details
+                            URL Completa
                           </h4>
                           <div class="mt-1">
                             <p
@@ -604,84 +604,170 @@
                                 ? 'text-gray-400'
                                 : 'text-gray-600'} text-sm"
                             >
-                              <span class="font-medium">Status:</span>
-                              <span class="ml-2"
-                                >{request.status || "pending"}</span
-                              >
+                              {request.url}
                             </p>
+                          </div>
+                        </div>
 
-                            <!-- Request Payload -->
-                            {#if request.requestBody}
-                              <div class="mt-2">
-                                <div class="flex justify-between items-center">
-                                  <span
-                                    class="text-sm font-medium {isDarkMode
-                                      ? 'text-gray-300'
-                                      : 'text-gray-700'}">Request Payload:</span
+                        <!-- Query Parameters -->
+                        {#if parseQueryParams(request.url)}
+                          <div>
+                            <div class="flex justify-between items-center">
+                              <h4
+                                class="{isDarkMode
+                                  ? 'text-gray-300'
+                                  : 'text-gray-700'} text-sm font-medium"
+                              >
+                                Query Parameters:
+                              </h4>
+                              <button
+                                class="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600"
+                                on:click|stopPropagation={() =>
+                                  copyToClipboard(
+                                    parseQueryParams(request.url).join('\n'),
+                                    `${request.id}-query`
+                                  )}
+                                title="Copy to clipboard"
+                              >
+                                {#if copiedStates[`${request.id}-query`]}
+                                  <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    class="h-4 w-4 text-green-500"
+                                    viewBox="0 0 20 20"
+                                    fill="currentColor"
                                   >
-                                  <button
-                                    class="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600"
-                                    on:click|stopPropagation={() =>
-                                      copyToClipboard(
-                                        JSON.stringify(
-                                          request.requestBody,
-                                          null,
-                                          2
-                                        ),
-                                        `${request.id}-request`
-                                      )}
-                                    title="Copy to clipboard"
+                                    <path
+                                      fill-rule="evenodd"
+                                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                      clip-rule="evenodd"
+                                    />
+                                  </svg>
+                                {:else}
+                                  <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    class="h-4 w-4 {isDarkMode
+                                      ? 'text-gray-400'
+                                      : 'text-gray-600'}"
+                                    viewBox="0 0 20 20"
+                                    fill="currentColor"
                                   >
-                                    {#if copiedStates[`${request.id}-request`]}
-                                      <svg
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        class="h-4 w-4 text-green-500"
-                                        viewBox="0 0 20 20"
-                                        fill="currentColor"
-                                      >
-                                        <path
-                                          fill-rule="evenodd"
-                                          d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                          clip-rule="evenodd"
-                                        />
-                                      </svg>
-                                    {:else}
-                                      <svg
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        class="h-4 w-4 {isDarkMode
-                                          ? 'text-gray-400'
-                                          : 'text-gray-600'}"
-                                        viewBox="0 0 20 20"
-                                        fill="currentColor"
-                                      >
-                                        <path
-                                          d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z"
-                                        />
-                                        <path
-                                          d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z"
-                                        />
-                                      </svg>
-                                    {/if}
-                                  </button>
-                                </div>
-                                <div
-                                  class="mt-1 rounded p-2 {isDarkMode
-                                    ? 'bg-gray-700'
-                                    : 'bg-gray-50'} max-h-[200px] overflow-y-auto"
-                                >
-                                  <pre
-                                    class="text-xs overflow-x-auto {isDarkMode
-                                      ? 'text-gray-300'
-                                      : 'text-gray-700'}">{JSON.stringify(
+                                    <path
+                                      d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z"
+                                    />
+                                    <path
+                                      d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z"
+                                    />
+                                  </svg>
+                                {/if}
+                              </button>
+                            </div>
+                            <div class="mt-1">
+                              <div
+                                class="text-sm font-mono p-2 rounded {isDarkMode
+                                  ? 'bg-gray-800 text-gray-300'
+                                  : 'bg-gray-50 text-gray-600'}"
+                              >
+                                {#each parseQueryParams(request.url) as param}
+                                  <div>{param}</div>
+                                {/each}
+                              </div>
+                            </div>
+                          </div>
+                        {/if}
+
+                        <!-- Request Payload -->
+                        {#if request.requestBody}
+                          <div class="mt-2">
+                            <div class="flex justify-between items-center">
+                              <span
+                                class="text-sm font-medium {isDarkMode
+                                  ? 'text-gray-300'
+                                  : 'text-gray-700'}">Request Payload:</span
+                              >
+                              <button
+                                class="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600"
+                                on:click|stopPropagation={() =>
+                                  copyToClipboard(
+                                    JSON.stringify(
                                       request.requestBody,
                                       null,
                                       2
-                                    )}</pre>
-                                </div>
-                              </div>
-                            {/if}
+                                    ),
+                                    `${request.id}-request`
+                                  )}
+                                title="Copy to clipboard"
+                              >
+                                {#if copiedStates[`${request.id}-request`]}
+                                  <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    class="h-4 w-4 text-green-500"
+                                    viewBox="0 0 20 20"
+                                    fill="currentColor"
+                                  >
+                                    <path
+                                      fill-rule="evenodd"
+                                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                      clip-rule="evenodd"
+                                    />
+                                  </svg>
+                                {:else}
+                                  <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    class="h-4 w-4 {isDarkMode
+                                      ? 'text-gray-400'
+                                      : 'text-gray-600'}"
+                                    viewBox="0 0 20 20"
+                                    fill="currentColor"
+                                  >
+                                    <path
+                                      d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z"
+                                    />
+                                    <path
+                                      d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z"
+                                    />
+                                  </svg>
+                                {/if}
+                              </button>
+                            </div>
+                            <div
+                              class="mt-1 rounded p-2 {isDarkMode
+                                ? 'bg-gray-700'
+                                : 'bg-gray-50'} max-h-[200px] overflow-y-auto"
+                            >
+                              <pre
+                                class="text-xs overflow-x-auto {isDarkMode
+                                  ? 'text-gray-300'
+                                  : 'text-gray-700'}">{JSON.stringify(
+                                  request.requestBody,
+                                  null,
+                                  2
+                                )}</pre>
+                            </div>
+                          </div>
+                        {/if}
 
-                            {#if request.responseBody}
+                        <!-- Response Details if available -->
+                        {#if request.responseBody}
+                          <div>
+                            <h4
+                              class="{isDarkMode
+                                ? 'text-gray-300'
+                                : 'text-gray-700'} text-sm font-medium"
+                            >
+                              Response Details
+                            </h4>
+                            <div class="mt-1">
+                              <p
+                                class="{isDarkMode
+                                  ? 'text-gray-400'
+                                  : 'text-gray-600'} text-sm"
+                              >
+                                <span class="font-medium">Status:</span>
+                                <span class="ml-2"
+                                  >{request.status || "pending"}</span
+                                >
+                              </p>
+
                               <div class="mt-2">
                                 <div class="flex justify-between items-center">
                                   <span
@@ -749,9 +835,9 @@
                                     )}</pre>
                                 </div>
                               </div>
-                            {/if}
+                            </div>
                           </div>
-                        </div>
+                        {/if}
                       </div>
                     </div>
                   {/if}
