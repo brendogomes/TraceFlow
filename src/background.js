@@ -12,8 +12,8 @@ function clearRequests() {
 async function notifyRequestUpdate() {
   try {
     await chrome.runtime.sendMessage({
-      type: 'REQUEST_UPDATE',
-      requests: currentRequests
+      type: "REQUEST_UPDATE",
+      requests: currentRequests,
     });
   } catch (error) {
     // Ignora erro se a popup não estiver aberta
@@ -23,7 +23,7 @@ async function notifyRequestUpdate() {
 // Função para adicionar uma nova request
 async function addRequest(tabId, request) {
   if (tabId !== currentTabId) return;
-  
+
   currentRequests = [request, ...currentRequests];
   await notifyRequestUpdate();
 }
@@ -38,6 +38,18 @@ function removeQueryParams(url) {
   }
 }
 
+// Função para atualizar uma request existente
+async function updateRequest(tabId, requestId, data) {
+  if (tabId !== currentTabId) return;
+
+  const index = currentRequests.findIndex((r) => r.id === requestId);
+
+  if (index !== -1) {
+    currentRequests[index] = { ...currentRequests[index], ...data };
+    await notifyRequestUpdate();
+  }
+}
+
 // Listener para requests da web
 chrome.webRequest.onBeforeRequest.addListener(
   async (details) => {
@@ -49,18 +61,64 @@ chrome.webRequest.onBeforeRequest.addListener(
     // Filtra recursos estáticos
     if (/\.(css|jpg|jpeg|png|gif|ico|svg|woff|woff2|ttf|eot)$/i.test(details.url)) return;
 
+    let requestBody = null;
+
+    // Tenta extrair o payload do body
+    if (details.requestBody) {
+      if (details.requestBody.raw) {
+        try {
+          const decoder = new TextDecoder();
+          const raw = details.requestBody.raw[0].bytes;
+          const text = decoder.decode(raw);
+          requestBody = JSON.parse(text);
+        } catch (e) {
+          // Se não conseguir parsear como JSON, tenta como texto
+          try {
+            const decoder = new TextDecoder();
+            const raw = details.requestBody.raw[0].bytes;
+            requestBody = decoder.decode(raw);
+          } catch (err) {
+            console.error('Error parsing request body:', err);
+          }
+        }
+      } else if (details.requestBody.formData) {
+        requestBody = details.requestBody.formData;
+      }
+    }
+
+    console.log('Request Body:', requestBody); // Debug log
+
     const request = {
       id: details.requestId,
-      url: removeQueryParams(details.url),
+      url: details.url,
       method: details.method,
       timestamp: new Date().toLocaleTimeString(),
       status: 'pending',
-      type: details.type
+      type: details.type,
+      requestBody: requestBody
     };
 
     await addRequest(details.tabId, request);
   },
-  { urls: ['<all_urls>'] }
+  { urls: ['<all_urls>'] },
+  ['requestBody']
+);
+
+// Listener para respostas
+chrome.webRequest.onHeadersReceived.addListener(
+  async (details) => {
+    if (details.tabId === -1) return;
+
+    const responseBody = await getResponseData(details);
+
+    const status = details.statusCode.toString();
+    await updateRequest(details.tabId, details.requestId, {
+      status,
+      responseBody,
+    });
+  },
+  { urls: ['<all_urls>'] },
+  ['responseHeaders']
 );
 
 // Listener para respostas
@@ -68,15 +126,15 @@ chrome.webRequest.onCompleted.addListener(
   async (details) => {
     if (details.tabId === -1 || details.tabId !== currentTabId) return;
 
-    const index = currentRequests.findIndex(r => r.id === details.requestId);
-    
+    const index = currentRequests.findIndex((r) => r.id === details.requestId);
+
     if (index !== -1) {
       currentRequests[index] = {
         ...currentRequests[index],
         status: details.statusCode,
-        statusText: details.statusCode.toString()
+        statusText: details.statusCode.toString(),
       };
-      
+
       await notifyRequestUpdate();
     }
   },
@@ -88,20 +146,45 @@ chrome.webRequest.onErrorOccurred.addListener(
   async (details) => {
     if (details.tabId === -1 || details.tabId !== currentTabId) return;
 
-    const index = currentRequests.findIndex(r => r.id === details.requestId);
-    
+    const index = currentRequests.findIndex((r) => r.id === details.requestId);
+
     if (index !== -1) {
       currentRequests[index] = {
         ...currentRequests[index],
         status: 'error',
-        statusText: details.error
+        statusText: details.error,
       };
-      
+
       await notifyRequestUpdate();
     }
   },
   { urls: ['<all_urls>'] }
 );
+
+// Função para capturar o corpo da resposta
+async function getResponseData(details) {
+  try {
+    const response = await fetch(details.url);
+    const contentType = response.headers.get('content-type');
+
+    // Se for JSON, retorna o corpo parseado
+    if (contentType && contentType.includes('application/json')) {
+      return await response.json();
+    }
+
+    // Se for texto, retorna como string
+    if (contentType && contentType.includes('text')) {
+      return await response.text();
+    }
+
+    // Para outros tipos, retorna null
+    return null;
+  } catch (error) {
+    return {
+      error: error.message,
+    };
+  }
+}
 
 // Listener para mensagens da interface
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {

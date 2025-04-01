@@ -13,6 +13,7 @@
   let messageListener;
   let expandedRequestId = null; // Para controlar qual card está expandido
   let isDarkMode = false;
+  let copiedStates = {};
 
   // Função para salvar as requests no sessionStorage
   function saveRequests(updatedRequests) {
@@ -231,7 +232,7 @@
 
   function getStatusIcon(status, isDark) {
     if (status === "pending") {
-      return `<svg class="w-4 h-4 ${isDark ? 'text-gray-400' : 'text-gray-600'}" fill="currentColor" viewBox="0 0 24 24">
+      return `<svg class="w-4 h-4 ${isDark ? "text-gray-400" : "text-gray-600"}" fill="currentColor" viewBox="0 0 24 24">
         <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" />
       </svg>`;
     }
@@ -258,7 +259,7 @@
       </svg>`;
     }
 
-    return `<svg class="w-4 h-4 ${isDark ? 'text-gray-400' : 'text-gray-600'}" fill="currentColor" viewBox="0 0 24 24">
+    return `<svg class="w-4 h-4 ${isDark ? "text-gray-400" : "text-gray-600"}" fill="currentColor" viewBox="0 0 24 24">
       <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" />
     </svg>`;
   }
@@ -267,17 +268,34 @@
     expandedRequestId = expandedRequestId === requestId ? null : requestId;
   }
 
+  // Função para copiar para o clipboard
+  async function copyToClipboard(text, id) {
+    try {
+      await navigator.clipboard.writeText(text);
+      copiedStates[id] = true;
+      setTimeout(() => {
+        copiedStates[id] = false;
+      }, 3000);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    }
+  }
+
   // Detecta o tema do sistema
   function detectSystemTheme() {
-    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+    if (
+      window.matchMedia &&
+      window.matchMedia("(prefers-color-scheme: dark)").matches
+    ) {
       isDarkMode = true;
     }
   }
 
   // Observer para mudanças no tema do sistema
   function watchSystemTheme() {
-    window.matchMedia('(prefers-color-scheme: dark)')
-      .addEventListener('change', event => {
+    window
+      .matchMedia("(prefers-color-scheme: dark)")
+      .addEventListener("change", (event) => {
         isDarkMode = event.matches;
       });
   }
@@ -325,8 +343,16 @@
 <main class="w-[600px] h-[600px] {isDarkMode ? 'bg-gray-900' : 'bg-white'}">
   <div class="h-full flex flex-col">
     <!-- Header -->
-    <div class="flex-none w-[600px] px-4 py-3 border-b {isDarkMode ? 'border-gray-700 bg-gray-800' : 'border-gray-200 bg-white'}">
-      <h1 class="text-lg font-medium {isDarkMode ? 'text-white' : 'text-gray-900'}">
+    <div
+      class="flex-none w-[600px] px-4 py-3 border-b {isDarkMode
+        ? 'border-gray-700 bg-gray-800'
+        : 'border-gray-200 bg-white'}"
+    >
+      <h1
+        class="text-lg font-medium {isDarkMode
+          ? 'text-white'
+          : 'text-gray-900'}"
+      >
         TraceFlow - HTTP Request Monitor
       </h1>
       <div class="mt-2">
@@ -334,26 +360,40 @@
           type="text"
           placeholder="Search requests..."
           bind:value={filter}
-          class="w-full px-3 py-2 text-sm rounded-md border {isDarkMode ? 'bg-gray-700 border-gray-600 text-gray-100 placeholder-gray-400' : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'} focus:outline-none focus:ring-2 focus:ring-blue-500"
+          class="w-full px-3 py-2 text-sm rounded-md border {isDarkMode
+            ? 'bg-gray-700 border-gray-600 text-gray-100 placeholder-gray-400'
+            : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'} focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
       </div>
     </div>
 
     <!-- Timeline -->
-    <div class="flex-1 w-[600px] overflow-y-auto pl-2 p-4 {isDarkMode ? 'bg-gray-900' : 'bg-white'}">
+    <div
+      class="flex-1 w-[600px] overflow-y-auto pl-2 p-4 {isDarkMode
+        ? 'bg-gray-900'
+        : 'bg-white'}"
+    >
       {#if requests.length === 0}
-        <div class="text-center text-sm {isDarkMode ? 'text-gray-400' : 'text-gray-500'} mt-4">
+        <div
+          class="text-center text-sm {isDarkMode
+            ? 'text-gray-400'
+            : 'text-gray-500'} mt-4"
+        >
           No requests captured yet. Browse some pages to see the requests.
         </div>
       {:else if filteredRequests.length === 0}
-        <div class="text-center text-sm {isDarkMode ? 'text-gray-400' : 'text-gray-500'} mt-4">
+        <div
+          class="text-center text-sm {isDarkMode
+            ? 'text-gray-400'
+            : 'text-gray-500'} mt-4"
+        >
           No requests match your search.
         </div>
       {:else}
         <div class="relative">
           <div class="flex flex-col space-y-4">
             {#each filteredRequests as request, index (request.id)}
-              <div 
+              <div
                 class="relative pl-14"
                 in:fly|local={{
                   y: -20,
@@ -366,95 +406,210 @@
                 <!-- Timeline dot -->
                 <div
                   class="absolute left-[0.7rem] top-[50%] -translate-y-[50%] w-[2rem] h-[2rem] rounded-full border-2 flex items-center justify-center {getStatusClass(
-                    request.status || "pending"
+                    request.status || 'pending'
                   )
                     .replace('bg-', 'border-')
-                    .replace('text-', isDarkMode ? 'text-' : 'border-')} {isDarkMode ? 'bg-gray-800' : 'bg-white'} z-10"
+                    .replace(
+                      'text-',
+                      isDarkMode ? 'text-' : 'border-'
+                    )} {isDarkMode ? 'bg-gray-800' : 'bg-white'} z-10"
                 >
                   {@html getStatusIcon(request.status || "pending", isDarkMode)}
                 </div>
 
                 <!-- Timeline vertical line -->
                 <div
-                  class="absolute left-[1.6rem] top-0 -bottom-4 w-px {isDarkMode ? 'bg-gray-700' : 'bg-gray-200'} last:hidden"
+                  class="absolute left-[1.6rem] top-0 -bottom-4 w-px {isDarkMode
+                    ? 'bg-gray-700'
+                    : 'bg-gray-200'} last:hidden"
                 />
 
                 <!-- Request card -->
                 <div
-                  class="{isDarkMode ? 'bg-gray-800 border-gray-700 hover:border-gray-600' : 'bg-white border-gray-200 hover:border-gray-300'} p-2 rounded-lg shadow-sm border hover:shadow-lg transition-all duration-200 ease-in-out transform hover:-translate-y-0.5 cursor-pointer"
+                  class="{isDarkMode
+                    ? 'bg-gray-800 border-gray-700 hover:border-gray-600'
+                    : 'bg-white border-gray-200 hover:border-gray-300'} p-2 rounded-lg shadow-sm border hover:shadow-lg transition-all duration-200 ease-in-out transform hover:-translate-y-0.5 cursor-pointer"
                   on:click={() => toggleRequest(request.id)}
-                  on:keydown={(e) => e.key === "Enter" && toggleRequest(request.id)}
+                  on:keydown={(e) =>
+                    e.key === "Enter" && toggleRequest(request.id)}
                   tabindex="0"
                   role="button"
                   aria-expanded={expandedRequestId === request.id}
                 >
                   <div class="flex items-center justify-between">
                     <div class="flex items-center space-x-2">
-                      <span class="font-mono text-sm {request.method === 'GET'
-                        ? 'text-blue-500'
-                        : request.method === 'POST'
-                          ? 'text-green-500'
-                          : request.method === 'DELETE'
-                            ? 'text-red-500'
-                            : isDarkMode ? 'text-gray-400' : 'text-gray-600'}">{request.method}</span>
-                      <span class="{isDarkMode ? 'text-gray-400' : 'text-gray-600'} text-sm">{request.timestamp}</span>
+                      <span
+                        class="font-mono text-sm {request.method === 'GET'
+                          ? 'text-blue-500'
+                          : request.method === 'POST'
+                            ? 'text-green-500'
+                            : request.method === 'DELETE'
+                              ? 'text-red-500'
+                              : isDarkMode
+                                ? 'text-gray-400'
+                                : 'text-gray-600'}">{request.method}</span
+                      >
+                      <span
+                        class="{isDarkMode
+                          ? 'text-gray-400'
+                          : 'text-gray-600'} text-sm">{request.timestamp}</span
+                      >
                     </div>
                     {#if request.status && request.status !== "undefined"}
                       <span
-                        class="px-2 py-1 rounded text-xs font-medium {getStatusClass(
+                        class="px-1 rounded text-xs font-medium {getStatusClass(
                           request.status
                         )}">{request.status}</span
                       >
                     {/if}
                   </div>
                   <div class="mt-2">
-                    <p class="{isDarkMode ? 'text-gray-300' : 'text-gray-800'} text-sm truncate">
-                      {removeQueryParams(request.url)}
+                    <p
+                      class="{isDarkMode
+                        ? 'text-gray-300'
+                        : 'text-gray-800'} text-sm truncate"
+                    >
+                      {request.url}
                     </p>
                   </div>
 
                   <!-- Dropdown content -->
                   {#if expandedRequestId === request.id}
                     <div
-                      class="mt-4 pt-4 {isDarkMode ? 'border-gray-700' : 'border-gray-100'} border-t"
+                      class="mt-4 pt-4 {isDarkMode
+                        ? 'border-gray-700'
+                        : 'border-gray-100'} border-t"
                       transition:slide={{ duration: 200 }}
                     >
                       <div class="space-y-3">
                         <!-- Request Details -->
                         <div>
-                          <h4 class="{isDarkMode ? 'text-gray-300' : 'text-gray-700'} text-sm font-medium">
+                          <h4
+                            class="{isDarkMode
+                              ? 'text-gray-300'
+                              : 'text-gray-700'} text-sm font-medium"
+                          >
                             Request Details
                           </h4>
                           <div class="mt-1 space-y-2">
-                            <p class="{isDarkMode ? 'text-gray-400' : 'text-gray-600'} text-sm">
+                            <p
+                              class="{isDarkMode
+                                ? 'text-gray-400'
+                                : 'text-gray-600'} text-sm"
+                            >
                               <span class="font-medium">Full URL:</span>
                               <span class="ml-2 break-all">{request.url}</span>
-                            </p>
-                            <p class="{isDarkMode ? 'text-gray-400' : 'text-gray-600'} text-sm">
-                              <span class="font-medium">Type:</span>
-                              <span class="ml-2">{request.type}</span>
-                            </p>
-                            <p class="{isDarkMode ? 'text-gray-400' : 'text-gray-600'} text-sm">
-                              <span class="font-medium">Time:</span>
-                              <span class="ml-2">{request.timestamp}</span>
                             </p>
                           </div>
                         </div>
 
                         <!-- Response Details if available -->
-                        {#if request.status && request.status !== "pending"}
-                          <div>
-                            <h4 class="{isDarkMode ? 'text-gray-300' : 'text-gray-700'} text-sm font-medium">
-                              Response Details
-                            </h4>
-                            <div class="mt-1">
-                              <p class="{isDarkMode ? 'text-gray-400' : 'text-gray-600'} text-sm">
-                                <span class="font-medium">Status:</span>
-                                <span class="ml-2">{request.status}</span>
-                              </p>
-                            </div>
+                        <div>
+                          <h4
+                            class="{isDarkMode
+                              ? 'text-gray-300'
+                              : 'text-gray-700'} text-sm font-medium"
+                          >
+                            Response Details
+                          </h4>
+                          <div class="mt-1">
+                            <p
+                              class="{isDarkMode
+                                ? 'text-gray-400'
+                                : 'text-gray-600'} text-sm"
+                            >
+                              <span class="font-medium">Status:</span>
+                              <span class="ml-2"
+                                >{request.status || "pending"}</span
+                              >
+                            </p>
+
+                            <!-- Request Payload -->
+                            {#if request.requestBody}
+                              <div class="mt-2">
+                                <div class="flex justify-between items-center">
+                                  <span
+                                    class="font-medium {isDarkMode
+                                      ? 'text-gray-300'
+                                      : 'text-gray-700'}">Request Payload:</span
+                                  >
+                                  <button
+                                    class="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600"
+                                    on:click|stopPropagation={() => copyToClipboard(JSON.stringify(request.requestBody, null, 2), `${request.id}-request`)}
+                                    title="Copy to clipboard"
+                                  >
+                                    {#if copiedStates[`${request.id}-request`]}
+                                      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-green-500" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                                      </svg>
+                                    {:else}
+                                      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 {isDarkMode ? 'text-gray-400' : 'text-gray-600'}" viewBox="0 0 20 20" fill="currentColor">
+                                        <path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" />
+                                        <path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z" />
+                                      </svg>
+                                    {/if}
+                                  </button>
+                                </div>
+                                <div
+                                  class="mt-1 rounded p-2 {isDarkMode
+                                    ? 'bg-gray-700'
+                                    : 'bg-gray-50'}"
+                                >
+                                  <pre
+                                    class="text-xs overflow-x-auto {isDarkMode
+                                      ? 'text-gray-300'
+                                      : 'text-gray-700'}">{JSON.stringify(
+                                      request.requestBody,
+                                      null,
+                                      2
+                                    )}</pre>
+                                </div>
+                              </div>
+                            {/if}
+
+                            {#if request.responseBody}
+                              <div class="mt-2">
+                                <div class="flex justify-between items-center">
+                                  <span
+                                    class="font-medium {isDarkMode
+                                      ? 'text-gray-300'
+                                      : 'text-gray-700'}">Response Body:</span
+                                  >
+                                  <button
+                                    class="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600"
+                                    on:click|stopPropagation={() => copyToClipboard(JSON.stringify(request.responseBody, null, 2), `${request.id}-response`)}
+                                    title="Copy to clipboard"
+                                  >
+                                    {#if copiedStates[`${request.id}-response`]}
+                                      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-green-500" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                                      </svg>
+                                    {:else}
+                                      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 {isDarkMode ? 'text-gray-400' : 'text-gray-600'}" viewBox="0 0 20 20" fill="currentColor">
+                                        <path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" />
+                                        <path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z" />
+                                      </svg>
+                                    {/if}
+                                  </button>
+                                </div>
+                                <div
+                                  class="mt-1 rounded p-2 {isDarkMode
+                                    ? 'bg-gray-700'
+                                    : 'bg-gray-50'}"
+                                >
+                                  <pre
+                                    class="text-xs overflow-x-auto {isDarkMode
+                                      ? 'text-gray-300'
+                                      : 'text-gray-700'}">{JSON.stringify(
+                                      request.responseBody,
+                                      null,
+                                      2
+                                    )}</pre>
+                                </div>
+                              </div>
+                            {/if}
                           </div>
-                        {/if}
+                        </div>
                       </div>
                     </div>
                   {/if}
