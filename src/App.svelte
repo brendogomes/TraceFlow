@@ -14,7 +14,9 @@
   let expandedRequestId = null; // Para controlar qual card está expandido
   let isDarkMode = false;
   let copiedStates = {};
-
+  let searchQuery = "";
+  let statusFilter = "all"; // novo estado para o filtro
+  
   // Função para salvar as requests no sessionStorage
   function saveRequests(updatedRequests) {
     try {
@@ -124,32 +126,26 @@
     updateDebouncedFilter(filter);
   }
 
-  // Atualiza os requests filtrados quando o debounced filter mudar
-  $: {
-    console.log("Filtering requests with:", debouncedFilter);
-    filteredRequests = requests.filter((request) => {
-      if (!debouncedFilter) return true;
+  // Função para filtrar as requests
+  $: filteredRequests = requests.filter(request => {
+    // Primeiro aplica o filtro de status
+    if (statusFilter === "error" && (!request.status || request.status < 400)) {
+      return false;
+    }
+    if (statusFilter === "success" && (!request.status || request.status < 200 || request.status >= 400)) {
+      return false;
+    }
 
-      const searchTerm = debouncedFilter.toLowerCase().trim();
+    // Depois aplica o filtro de texto se existir
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim();
+      return request.url.toLowerCase().includes(query) ||
+             request.method.toLowerCase().includes(query) ||
+             String(request.status).includes(query);
+    }
 
-      // Valores para busca
-      const method = request.method?.toLowerCase() || "";
-      const url = request.url?.toLowerCase() || "";
-      const timestamp = request.timestamp?.toLowerCase() || "";
-      const status = String(request.status)?.toLowerCase() || "";
-      const statusText = request.statusText?.toLowerCase() || "";
-
-      // Verifica se o termo está em qualquer um dos campos
-      return (
-        method.includes(searchTerm) ||
-        url.includes(searchTerm) ||
-        timestamp.includes(searchTerm) ||
-        status.includes(searchTerm) ||
-        statusText.includes(searchTerm)
-      );
-    });
-    console.log("Filtered requests:", filteredRequests.length);
-  }
+    return true;
+  });
 
   function toggleRow(id) {
     const index = expandedRows.indexOf(id);
@@ -356,14 +352,81 @@
         TraceFlow - HTTP Request Monitor
       </h1>
       <div class="mt-2">
-        <input
-          type="text"
-          placeholder="Search requests..."
-          bind:value={filter}
-          class="w-full px-3 py-2 text-sm rounded-md border {isDarkMode
-            ? 'bg-gray-700 border-gray-600 text-gray-100 placeholder-gray-400'
-            : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'} focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
+        <div class="mb-4">
+          <input
+            type="text"
+            placeholder="Search requests..."
+            bind:value={searchQuery}
+            class="w-full px-3 py-2 border rounded-lg {isDarkMode
+              ? 'bg-gray-700 border-gray-600 text-gray-200'
+              : 'bg-white border-gray-300 text-gray-700'}"
+          />
+          <!-- Status Filter -->
+          <div class="mt-3 flex items-center justify-center space-x-6">
+            <label class="relative flex items-center group cursor-pointer">
+              <input
+                type="radio"
+                class="peer sr-only"
+                name="status"
+                value="all"
+                bind:group={statusFilter}
+              />
+              <div class="w-4 h-4 border-2 rounded-full transition-colors duration-200 
+                {isDarkMode 
+                  ? 'border-gray-600 peer-checked:border-blue-500' 
+                  : 'border-gray-300 peer-checked:border-blue-600'} 
+                peer-checked:bg-current relative flex items-center justify-center">
+                <div class="w-2 h-2 rounded-full bg-blue-500 opacity-0 peer-checked:opacity-100 transition-opacity duration-200"></div>
+              </div>
+              <span class="ml-2 text-sm font-medium transition-colors duration-200 
+                {isDarkMode 
+                  ? 'text-gray-300 group-hover:text-gray-200' 
+                  : 'text-gray-700 group-hover:text-gray-900'}">All</span>
+            </label>
+
+            <label class="relative flex items-center group cursor-pointer">
+              <input
+                type="radio"
+                class="peer sr-only"
+                name="status"
+                value="success"
+                bind:group={statusFilter}
+              />
+              <div class="w-4 h-4 border-2 rounded-full transition-colors duration-200 
+                {isDarkMode 
+                  ? 'border-gray-600 peer-checked:border-green-500' 
+                  : 'border-gray-300 peer-checked:border-green-600'} 
+                peer-checked:bg-current relative flex items-center justify-center">
+                <div class="w-2 h-2 rounded-full bg-green-500 opacity-0 peer-checked:opacity-100 transition-opacity duration-200"></div>
+              </div>
+              <span class="ml-2 text-sm font-medium transition-colors duration-200 
+                {isDarkMode 
+                  ? 'text-gray-300 group-hover:text-gray-200' 
+                  : 'text-gray-700 group-hover:text-gray-900'}">Success</span>
+            </label>
+
+            <label class="relative flex items-center group cursor-pointer">
+              <input
+                type="radio"
+                class="peer sr-only"
+                name="status"
+                value="error"
+                bind:group={statusFilter}
+              />
+              <div class="w-4 h-4 border-2 rounded-full transition-colors duration-200 
+                {isDarkMode 
+                  ? 'border-gray-600 peer-checked:border-red-500' 
+                  : 'border-gray-300 peer-checked:border-red-600'} 
+                peer-checked:bg-current relative flex items-center justify-center">
+                <div class="w-2 h-2 rounded-full bg-red-500 opacity-0 peer-checked:opacity-100 transition-opacity duration-200"></div>
+              </div>
+              <span class="ml-2 text-sm font-medium transition-colors duration-200 
+                {isDarkMode 
+                  ? 'text-gray-300 group-hover:text-gray-200' 
+                  : 'text-gray-700 group-hover:text-gray-900'}">Error</span>
+            </label>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -392,7 +455,7 @@
       {:else}
         <div class="relative">
           <div class="flex flex-col space-y-4">
-            {#each filteredRequests as request, index (request.id)}
+            {#each filteredRequests as request, index}
               <div
                 class="relative pl-14"
                 in:fly|local={{
