@@ -24,11 +24,6 @@
         `requests_${currentTabId}`,
         JSON.stringify(updatedRequests)
       );
-      console.log(
-        "Requests saved for tab:",
-        currentTabId,
-        updatedRequests.length
-      );
     } catch (error) {
       console.error("Error saving requests:", error);
     }
@@ -40,7 +35,6 @@
       const savedRequests = sessionStorage.getItem(`requests_${currentTabId}`);
       if (savedRequests) {
         requests = JSON.parse(savedRequests);
-        console.log("Requests loaded for tab:", currentTabId, requests.length);
       } else {
         // Se não houver requests salvas, solicita ao background
         requestInitialRequests();
@@ -58,10 +52,6 @@
       if (response) {
         requests = response;
         saveRequests(requests);
-        console.log(
-          "Initial requests loaded from background:",
-          requests.length
-        );
       }
     });
   }
@@ -70,7 +60,6 @@
   function clearPreviousTabRequests(previousTabId) {
     if (previousTabId) {
       sessionStorage.removeItem(`requests_${previousTabId}`);
-      console.log("Cleared requests for previous tab:", previousTabId);
     }
   }
 
@@ -85,7 +74,6 @@
         message.type === "REQUEST_UPDATE" &&
         (!sender.tab || sender.tab.id === currentTabId)
       ) {
-        console.log("Received request update:", message.requests.length);
         requests = message.requests;
         saveRequests(requests);
       }
@@ -128,6 +116,7 @@
 
   // Função para filtrar as requests
   $: filteredRequests = requests.filter((request) => {
+    console.log(filteredRequests);
     // Primeiro aplica o filtro de status
     if (statusFilter === "error" && (!request.status || request.status < 400)) {
       return false;
@@ -299,6 +288,16 @@
       .addEventListener("change", (event) => {
         isDarkMode = event.matches;
       });
+  }
+
+  // Função para formatar a URL sem os query params
+  function formatUrl(url) {
+    try {
+      const urlObj = new URL(url);
+      return `${urlObj.origin}${urlObj.pathname}`;
+    } catch (e) {
+      return url;
+    }
   }
 
   onMount(async () => {
@@ -555,7 +554,7 @@
                         ? 'text-gray-300'
                         : 'text-gray-800'} text-sm truncate"
                     >
-                      {request.url}
+                      {formatUrl(request.url)}
                     </p>
                   </div>
                 </div>
@@ -578,14 +577,19 @@
                           Request Details
                         </h4>
                         <div class="mt-1 space-y-2">
-                          <p
-                            class="{isDarkMode
-                              ? 'text-gray-400'
-                              : 'text-gray-600'} text-sm"
-                          >
-                            <span class="font-medium">Full URL:</span>
-                            <span class="ml-2 break-all">{request.url}</span>
-                          </p>
+                          <div class="flex">
+                            <span
+                              class="font-medium {isDarkMode
+                                ? 'text-gray-400'
+                                : 'text-gray-600'}">URL:</span
+                            >
+                            <span
+                              class="ml-2 break-all {isDarkMode
+                                ? 'text-gray-400'
+                                : 'text-gray-600'}"
+                              >{formatUrl(request.url)}</span
+                            >
+                          </div>
 
                           <!-- Query Parameters Section -->
                           {#if formatQueryParams(request.url).hasParams}
