@@ -227,6 +227,40 @@
     return "bg-gray-100 text-gray-800";
   }
 
+  function getStatusIcon(status) {
+    if (status === "pending") {
+      return `<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" />
+      </svg>`;
+    }
+    if (status === "error") {
+      return `<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+      </svg>`;
+    }
+
+    const statusCode = parseInt(status);
+    if (statusCode >= 200 && statusCode < 300) {
+      return `<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+      </svg>`;
+    }
+    if (statusCode >= 300 && statusCode < 400) {
+      return `<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7l4-4m0 0l4 4m-4-4v18" />
+      </svg>`;
+    }
+    if (statusCode >= 400) {
+      return `<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+      </svg>`;
+    }
+
+    return `<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+      <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" />
+    </svg>`;
+  }
+
   onMount(async () => {
     // Inicializa a aba atual e configura os listeners
     await updateCurrentTab();
@@ -307,12 +341,14 @@
               >
                 <!-- Timeline dot -->
                 <div
-                  class="absolute left-5 top-[50%] -translate-y-[50%] w-3 h-3 rounded-full border-2 {getStatusClass(
+                  class="absolute left-[0.7rem] top-[50%] -translate-y-[50%] w-[2rem] h-[2rem] rounded-full border-2 flex items-center justify-center {getStatusClass(
                     request.status
                   )
                     .replace('bg-', 'border-')
                     .replace('text-', 'border-')} bg-white z-10"
-                />
+                >
+                  {@html getStatusIcon(request.status)}
+                </div>
 
                 <!-- Timeline vertical line -->
                 <div
