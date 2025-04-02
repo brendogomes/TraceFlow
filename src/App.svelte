@@ -16,7 +16,6 @@
   let searchQuery = "";
   let statusFilter = "all"; // novo estado para o filtro
   let requestListContainer;
-  let expandedCardPosition = null;
 
   // Função para salvar as requests no sessionStorage
   function saveRequests(updatedRequests) {
@@ -130,7 +129,7 @@
 
   // Função para filtrar as requests
   $: filteredRequests = requests.filter((request) => {
-    console.log(filteredRequests);
+    expandedRequestId = null;
     // Primeiro aplica o filtro de status
     if (statusFilter === "error" && (!request.status || request.status < 400)) {
       return false;
