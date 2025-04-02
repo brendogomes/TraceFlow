@@ -3,15 +3,8 @@
   "name": "TraceFlow",
   "version": "1.0.0",
   "description": "HTTP Request Tracing Extension",
-  "permissions": [
-    "webRequest",
-    "storage",
-    "activeTab",
-    "tabs"
-  ],
-  "host_permissions": [
-    "<all_urls>"
-  ],
+  "permissions": ["webRequest", "storage", "activeTab", "tabs"],
+  "host_permissions": ["<all_urls>"],
   "action": {
     "default_popup": "index.html",
     "default_icon": {

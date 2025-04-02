@@ -329,15 +329,22 @@
         ? 'border-gray-700 bg-gray-800'
         : 'border-gray-200 bg-white'}"
     >
-      <h1
-        class="text-lg font-medium {isDarkMode
-          ? 'text-white'
-          : 'text-gray-900'}"
-      >
-        TraceFlow - HTTP Request Monitor
-      </h1>
-      <div class="mt-2">
-        <div class="mb-4">
+      <div class="flex items-center">
+        <img
+          src="/assets/svg/trace-flow-logo.svg"
+          alt="TraceFlow Logo"
+          class="w-8 h-8 mr-2"
+        />
+        <h1
+          class="text-lg font-medium {isDarkMode
+            ? 'text-white'
+            : 'text-gray-900'}"
+        >
+          TraceFlow
+        </h1>
+      </div>
+      <div class="mt-3">
+        <div class="mb-3">
           <input
             type="text"
             placeholder="Search requests..."
@@ -386,12 +393,12 @@
               <div
                 class="w-4 h-4 border-2 rounded-full transition-colors duration-200
                 {isDarkMode
-                  ? 'border-gray-600 peer-checked:border-green-500'
-                  : 'border-gray-300 peer-checked:border-green-600'} 
+                  ? 'border-gray-600 peer-checked:border-blue-500'
+                  : 'border-gray-300 peer-checked:border-blue-600'} 
                 peer-checked:bg-current relative flex items-center justify-center"
               >
                 <div
-                  class="w-2 h-2 rounded-full bg-green-500 opacity-0 peer-checked:opacity-100 transition-opacity duration-200"
+                  class="w-2 h-2 rounded-full bg-blue-500 opacity-0 peer-checked:opacity-100 transition-opacity duration-200"
                 ></div>
               </div>
               <span
@@ -413,12 +420,12 @@
               <div
                 class="w-4 h-4 border-2 rounded-full transition-colors duration-200
                 {isDarkMode
-                  ? 'border-gray-600 peer-checked:border-red-500'
-                  : 'border-gray-300 peer-checked:border-red-600'} 
+                  ? 'border-gray-600 peer-checked:border-blue-500'
+                  : 'border-gray-300 peer-checked:border-blue-600'} 
                 peer-checked:bg-current relative flex items-center justify-center"
               >
                 <div
-                  class="w-2 h-2 rounded-full bg-red-500 opacity-0 peer-checked:opacity-100 transition-opacity duration-200"
+                  class="w-2 h-2 rounded-full bg-blue-500 opacity-0 peer-checked:opacity-100 transition-opacity duration-200"
                 ></div>
               </div>
               <span
