@@ -1,7 +1,6 @@
 <script>
   import { onMount, onDestroy } from "svelte";
-  import { fade, fly, slide } from "svelte/transition";
-  import { quintOut } from "svelte/easing";
+  import { fly, slide } from "svelte/transition";
 
   let requests = [];
   let pendingRequests = [];
@@ -155,54 +154,6 @@
 
     return true;
   });
-
-  // Função para salvar a posição do card expandido
-  function saveExpandedCardPosition() {
-    if (expandedRequestId && requestListContainer) {
-      const card = requestListContainer.querySelector(
-        `[data-request-id="${expandedRequestId}"]`
-      );
-      if (card) {
-        expandedCardPosition = {
-          id: expandedRequestId,
-          rect: card.getBoundingClientRect(),
-        };
-      }
-    }
-  }
-
-  // Função para restaurar a posição do card expandido
-  function restoreExpandedCardPosition() {
-    if (expandedCardPosition && requestListContainer) {
-      const card = requestListContainer.querySelector(
-        `[data-request-id="${expandedCardPosition.id}"]`
-      );
-      if (card) {
-        const newRect = card.getBoundingClientRect();
-        const deltaY = newRect.top - expandedCardPosition.rect.top;
-        if (deltaY !== 0) {
-          requestListContainer.scrollTop =
-            requestListContainer.scrollTop + deltaY;
-        }
-      }
-    }
-  }
-
-  // Função para atualizar as requests preservando a posição do card expandido
-  function updateRequestsWithScroll(newRequests) {
-    if (expandedRequestId) {
-      saveExpandedCardPosition();
-    }
-
-    requests = newRequests;
-
-    // Use nextTick para garantir que o DOM foi atualizado
-    setTimeout(() => {
-      if (expandedRequestId) {
-        restoreExpandedCardPosition();
-      }
-    }, 0);
-  }
 
   function formatQueryParams(url) {
     try {
@@ -509,13 +460,13 @@
       {:else}
         <div class="relative">
           <div class="flex flex-col space-y-4">
-            {#each filteredRequests as request, index}
+            {#each filteredRequests as request}
               <div
                 class="relative pl-14"
                 data-request-id={request.id}
                 in:fly|local={{
                   y: -20,
-                  duration: 200,
+                  duration: 1000,
                 }}
               >
                 <!-- Timeline dot -->
@@ -594,7 +545,7 @@
                     class="mt-4 pt-4 {isDarkMode
                       ? 'border-gray-700'
                       : 'border-gray-100'} border-t"
-                    transition:slide={{ duration: 200 }}
+                    transition:slide={{ duration: 800 }}
                   >
                     <div class="space-y-3">
                       <!-- Request Details -->
