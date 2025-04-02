@@ -1,9 +1,5 @@
-// Armazenamento de requisições por aba
-let requestsByTab = new Map();
-let currentTabId = null;
-
-// Lista de tipos de recursos que queremos ignorar
-const ignoredResourceTypes = [
+// Tipos de recursos a serem ignorados
+const ignoredTypes = [
   "stylesheet",
   "image",
   "media",
@@ -14,227 +10,324 @@ const ignoredResourceTypes = [
   "beacon",
   "csp_report",
   "imageset",
+  "wss",
+  "websocket",
 ];
+
+// Map para armazenar as requisições por aba
+let requestsByTab = new Map();
+let currentTabId = null;
+let port = null;
+let debuggerAttached = new Set();
 
 // Função para verificar se é uma requisição de API
 function isApiRequest(details) {
-  // Ignora tipos de recursos que não são de API
-  if (ignoredResourceTypes.includes(details.type)) {
+  if (ignoredTypes.includes(details.type)) {
     return false;
   }
 
-  // Verifica se é uma requisição XHR ou Fetch
-  if (details.type === "xmlhttprequest" || details.type === "fetch") {
-    return true;
+  if (/\.(css|jpg|jpeg|png|gif|ico|svg|woff|woff2|ttf|eot)$/i.test(details.url)) {
+    return false;
   }
 
-  // Para outros tipos, verifica se parece ser uma API pela URL ou headers
-  const url = details.url.toLowerCase();
-  return (
-    url.includes("/api/") ||
-    url.includes("/v1/") ||
-    url.includes("/v2/") ||
-    url.includes("/rest/") ||
-    url.includes("/graphql")
-  );
+  return true;
 }
 
 // Função para formatar a data
 function formatDate(date) {
-  return new Intl.DateTimeFormat("pt-BR", {
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: false,
-  }).format(date);
+  return date.toLocaleTimeString();
 }
 
-// Função para carregar requisições do storage
-async function loadRequestsFromStorage() {
-  const data = await chrome.storage.local.get(['requestsByTab', 'currentTabId']);
-  if (data.requestsByTab) {
-    requestsByTab = new Map(JSON.parse(data.requestsByTab));
-  }
-  if (data.currentTabId) {
-    currentTabId = data.currentTabId;
+// Função para notificar o popup sobre mudanças nas requisições
+async function notifyRequestUpdate() {
+  try {
+    if (port) {
+      port.postMessage({
+        type: "REQUEST_UPDATE",
+        requests: currentTabId ? requestsByTab.get(currentTabId) || [] : [],
+      });
+    }
+  } catch (error) {
+    console.debug("Erro ao notificar popup:", error);
   }
 }
 
-// Função para salvar requisições no storage
+// Função para salvar as requisições no storage
 async function saveRequestsToStorage() {
-  await chrome.storage.local.set({
-    requestsByTab: JSON.stringify([...requestsByTab]),
-    currentTabId: currentTabId
-  });
+  try {
+    await chrome.storage.local.set({
+      requestsByTab: JSON.stringify([...requestsByTab]),
+      currentTabId: currentTabId,
+    });
+  } catch (error) {
+    console.error("Erro ao salvar dados no storage:", error);
+  }
+}
+
+// Função para carregar as requisições do storage
+async function loadRequestsFromStorage() {
+  try {
+    const data = await chrome.storage.local.get([
+      "requestsByTab",
+      "currentTabId",
+    ]);
+    if (data.requestsByTab) {
+      requestsByTab = new Map(JSON.parse(data.requestsByTab));
+    }
+    if (data.currentTabId) {
+      currentTabId = data.currentTabId;
+    }
+  } catch (error) {
+    console.error("Erro ao carregar dados do storage:", error);
+  }
 }
 
 // Carrega as requisições ao iniciar
 loadRequestsFromStorage();
 
-// Monitora mudanças de aba
-chrome.tabs.onActivated.addListener(async (activeInfo) => {
-  currentTabId = activeInfo.tabId;
-  // Limpa o array de requisições da aba anterior
-  requestsByTab.clear();
-  // Inicializa o array vazio para a nova aba
-  requestsByTab.set(currentTabId, []);
-  // Notifica o popup com array vazio
-  notifyPopup([]);
-  // Reseta o badge
-  updateBadge(0);
-  // Salva o estado
-  await saveRequestsToStorage();
-});
+// Função para anexar o debugger a uma aba
+async function attachDebugger(tabId) {
+  if (debuggerAttached.has(tabId)) return;
+  
+  try {
+    await chrome.debugger.attach({ tabId }, "1.0");
+    await chrome.debugger.sendCommand({ tabId }, "Network.enable");
+    debuggerAttached.add(tabId);
+    
+    chrome.debugger.onEvent.addListener(async (source, method, params) => {
+      if (source.tabId !== tabId) return;
+      
+      const tabRequests = requestsByTab.get(tabId);
+      if (!tabRequests) return;
 
-// Monitora o fechamento de abas
-chrome.tabs.onRemoved.addListener(async (tabId) => {
-  requestsByTab.delete(tabId);
-  await saveRequestsToStorage();
+      if (method === "Network.requestWillBeSent") {
+        const request = tabRequests.find(r => r.url === params.request.url);
+        if (request) {
+          request.requestBody = params.request.postData;
+          if (request.requestBody) {
+            try {
+              request.requestBody = JSON.parse(request.requestBody);
+            } catch (e) {
+              // Se não for JSON, mantém como texto
+            }
+          }
+          if (tabId === currentTabId) {
+            await notifyRequestUpdate();
+          }
+          await saveRequestsToStorage();
+        }
+      }
+      
+      if (method === "Network.responseReceived") {
+        const request = tabRequests.find(r => r.url === params.response.url);
+        if (request) {
+          try {
+            const response = await chrome.debugger.sendCommand(
+              { tabId },
+              "Network.getResponseBody",
+              { requestId: params.requestId }
+            );
+            
+            if (response.body) {
+              try {
+                request.responseBody = JSON.parse(response.body);
+              } catch (e) {
+                request.responseBody = response.body;
+              }
+              
+              if (tabId === currentTabId) {
+                await notifyRequestUpdate();
+              }
+              await saveRequestsToStorage();
+            }
+          } catch (error) {
+            console.debug("Não foi possível capturar o corpo da resposta:", error);
+          }
+        }
+      }
+    });
+  } catch (error) {
+    console.debug("Erro ao anexar debugger:", error);
+  }
+}
+
+// Função para desanexar o debugger de uma aba
+async function detachDebugger(tabId) {
+  if (!debuggerAttached.has(tabId)) return;
+  
+  try {
+    await chrome.debugger.detach({ tabId });
+    debuggerAttached.delete(tabId);
+  } catch (error) {
+    console.debug("Erro ao desanexar debugger:", error);
+  }
+}
+
+// Listener para conexões do popup
+chrome.runtime.onConnect.addListener((newPort) => {
+  port = newPort;
+  port.onDisconnect.addListener(() => {
+    port = null;
+  });
+  
+  // Anexa o debugger à aba atual quando o popup é aberto
+  if (currentTabId) {
+    attachDebugger(currentTabId);
+  }
+  
+  // Envia as requisições atuais quando o popup conecta
+  notifyRequestUpdate();
 });
 
 // Listener para capturar requisições
 chrome.webRequest.onBeforeRequest.addListener(
   async (details) => {
-    // Ignora requisições que não são de uma aba ou não são APIs
-    if (details.tabId === -1 || !isApiRequest(details)) return;
+    try {
+      if (details.tabId === -1 || !isApiRequest(details)) return;
 
-    // Inicializa o array de requisições para a aba se necessário
-    if (!requestsByTab.has(details.tabId)) {
-      requestsByTab.set(details.tabId, []);
+      if (!requestsByTab.has(details.tabId)) {
+        requestsByTab.set(details.tabId, []);
+      }
+
+      const request = {
+        id: details.requestId,
+        method: details.method,
+        url: details.url,
+        timestamp: formatDate(new Date()),
+        type: details.type,
+        status: "pending"
+      };
+
+      const tabRequests = requestsByTab.get(details.tabId);
+      tabRequests.unshift(request);
+
+      if (tabRequests.length > 100) {
+        tabRequests.pop();
+      }
+
+      if (details.tabId === currentTabId) {
+        updateBadge(tabRequests.length);
+        await notifyRequestUpdate();
+      }
+
+      await saveRequestsToStorage();
+    } catch (error) {
+      console.error("Erro ao capturar requisição:", error);
     }
-
-    const request = {
-      id: details.requestId,
-      method: "GET", // O método real será capturado no onBeforeSendHeaders
-      url: details.url,
-      timestamp: formatDate(new Date()),
-      type: details.type,
-      status: "pending",
-    };
-
-    const tabRequests = requestsByTab.get(details.tabId);
-    tabRequests.unshift(request);
-
-    // Limita a 100 requisições por aba
-    if (tabRequests.length > 100) {
-      tabRequests.pop();
-    }
-
-    // Atualiza o badge apenas se for a aba atual
-    if (details.tabId === currentTabId) {
-      updateBadge(tabRequests.length);
-      notifyPopup(tabRequests);
-    }
-
-    // Salva o estado
-    await saveRequestsToStorage();
   },
   { urls: ["<all_urls>"] }
 );
 
-// Captura o método HTTP real
-chrome.webRequest.onBeforeSendHeaders.addListener(
-  async (details) => {
-    if (details.tabId === -1) return;
-    const tabRequests = requestsByTab.get(details.tabId);
-    if (!tabRequests) return;
-
-    const request = tabRequests.find((r) => r.id === details.requestId);
-    if (request) {
-      request.method = details.method;
-      if (details.tabId === currentTabId) {
-        notifyPopup(tabRequests);
-      }
-      await saveRequestsToStorage();
-    }
-  },
-  { urls: ["<all_urls>"] },
-  ["requestHeaders"]
-);
-
-// Captura o status da resposta
+// Listener para respostas
 chrome.webRequest.onCompleted.addListener(
   async (details) => {
-    if (details.tabId === -1) return;
-    const tabRequests = requestsByTab.get(details.tabId);
-    if (!tabRequests) return;
+    try {
+      if (details.tabId === -1) return;
+      const tabRequests = requestsByTab.get(details.tabId);
+      if (!tabRequests) return;
 
-    const request = tabRequests.find((r) => r.id === details.requestId);
-    if (request) {
-      request.status = details.statusCode;
-      request.statusText = `${details.statusCode}`;
-      if (details.tabId === currentTabId) {
-        notifyPopup(tabRequests);
+      const request = tabRequests.find((r) => r.id === details.requestId);
+      if (request) {
+        request.status = details.statusCode;
+        request.statusText = `${details.statusCode}`;
+
+        if (details.tabId === currentTabId) {
+          await notifyRequestUpdate();
+        }
+        await saveRequestsToStorage();
       }
-      await saveRequestsToStorage();
+    } catch (error) {
+      console.error("Erro ao capturar status da resposta:", error);
     }
   },
   { urls: ["<all_urls>"] }
 );
 
-// Captura erros nas requisições
+// Listener para erros nas requisições
 chrome.webRequest.onErrorOccurred.addListener(
   async (details) => {
-    if (details.tabId === -1) return;
-    const tabRequests = requestsByTab.get(details.tabId);
-    if (!tabRequests) return;
+    try {
+      if (details.tabId === -1) return;
+      const tabRequests = requestsByTab.get(details.tabId);
+      if (!tabRequests) return;
 
-    const request = tabRequests.find((r) => r.id === details.requestId);
-    if (request) {
-      request.status = "error";
-      request.statusText = details.error;
-      if (details.tabId === currentTabId) {
-        notifyPopup(tabRequests);
+      const request = tabRequests.find((r) => r.id === details.requestId);
+      if (request) {
+        request.status = "error";
+        request.statusText = details.error;
+
+        if (details.tabId === currentTabId) {
+          await notifyRequestUpdate();
+        }
+        await saveRequestsToStorage();
       }
-      await saveRequestsToStorage();
+    } catch (error) {
+      console.error("Erro ao capturar erro nas requisições:", error);
     }
   },
   { urls: ["<all_urls>"] }
 );
 
-// Função para notificar o popup sobre mudanças nas requisições
-async function notifyPopup(requests) {
+// Monitora mudanças de aba
+chrome.tabs.onActivated.addListener(async (activeInfo) => {
   try {
-    await chrome.runtime.sendMessage({
-      type: 'REQUEST_UPDATE',
-      requests: requests
-    }).catch(() => {
-      // Ignora erros de comunicação quando o popup não está aberto
+    currentTabId = activeInfo.tabId;
+    // Limpa o array de requisições da aba anterior
+    requestsByTab.clear();
+    // Inicializa o array vazio para a nova aba
+    requestsByTab.set(currentTabId, []);
+    // Anexa o debugger à nova aba
+    await attachDebugger(currentTabId);
+    // Notifica o popup com array vazio
+    await notifyRequestUpdate();
+    // Reseta o badge
+    updateBadge(0);
+    // Salva o estado
+    await saveRequestsToStorage();
+  } catch (error) {
+    console.error("Erro ao monitorar mudança de aba:", error);
+  }
+});
+
+// Monitora o fechamento de abas
+chrome.tabs.onRemoved.addListener(async (tabId) => {
+  try {
+    await detachDebugger(tabId);
+    requestsByTab.delete(tabId);
+    await saveRequestsToStorage();
+  } catch (error) {
+    console.error("Erro ao monitorar fechamento de aba:", error);
+  }
+});
+
+// Função para atualizar o badge
+function updateBadge(count) {
+  try {
+    chrome.action.setBadgeText({
+      text: count.toString(),
     });
   } catch (error) {
-    // Ignora outros erros de comunicação
+    console.error("Erro ao atualizar o badge:", error);
   }
-}
-
-// Atualiza o badge com o número de requisições
-function updateBadge(count) {
-  chrome.action.setBadgeText({
-    text: count.toString()
-  });
 }
 
 // Limpa as requisições antigas a cada minuto
 setInterval(async () => {
-  for (const [tabId, requests] of requestsByTab.entries()) {
-    const fiveMinutesAgo = Date.now() - 5 * 60 * 1000;
-    const filteredRequests = requests.filter((request) => {
-      return new Date(request.timestamp).getTime() > fiveMinutesAgo;
-    });
-    requestsByTab.set(tabId, filteredRequests);
+  try {
+    for (const [tabId, requests] of requestsByTab.entries()) {
+      const fiveMinutesAgo = Date.now() - 5 * 60 * 1000;
+      const filteredRequests = requests.filter((request) => {
+        return new Date(request.timestamp).getTime() > fiveMinutesAgo;
+      });
+      requestsByTab.set(tabId, filteredRequests);
 
-    if (tabId === currentTabId) {
-      updateBadge(filteredRequests.length);
-      notifyPopup(filteredRequests);
+      if (tabId === currentTabId) {
+        updateBadge(filteredRequests.length);
+        await notifyRequestUpdate();
+      }
     }
+    await saveRequestsToStorage();
+  } catch (error) {
+    console.error("Erro ao limpar requisições antigas:", error);
   }
-  await saveRequestsToStorage();
 }, 60000);
-
-// Listener para mensagens do popup
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message.type === "GET_REQUESTS") {
-    // Retorna as requisições da aba atual
-    const requests = currentTabId ? requestsByTab.get(currentTabId) || [] : [];
-    sendResponse(requests);
-  }
-});

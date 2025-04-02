@@ -16,6 +16,7 @@
   let searchQuery = "";
   let statusFilter = "all"; // novo estado para o filtro
   let requestListContainer;
+  let port;
 
   // Função para salvar as requests no sessionStorage
   function saveRequests(updatedRequests) {
@@ -48,12 +49,7 @@
 
   // Função para solicitar requests iniciais
   function requestInitialRequests() {
-    chrome.runtime.sendMessage({ type: "GET_REQUESTS" }, (response) => {
-      if (response) {
-        requests = response;
-        saveRequests(requests);
-      }
-    });
+    port.postMessage({ type: "GET_REQUESTS" });
   }
 
   // Função para limpar as requests quando mudar de aba
@@ -282,6 +278,17 @@
   }
 
   onMount(async () => {
+    // Conecta com o background script
+    port = chrome.runtime.connect();
+
+    // Listener para atualizações de requisições
+    port.onMessage.addListener((message) => {
+      if (message.type === "REQUEST_UPDATE") {
+        updateRequests(message.requests);
+        saveRequests(message.requests);
+      }
+    });
+
     // Inicializa a aba atual e configura os listeners
     await updateCurrentTab();
 
@@ -310,6 +317,9 @@
       if (messageListener) {
         chrome.runtime.onMessage.removeListener(messageListener);
       }
+      if (port) {
+        port.disconnect();
+      }
     };
   });
 
@@ -317,6 +327,9 @@
     clearTimeout(debounceTimeout);
     if (messageListener) {
       chrome.runtime.onMessage.removeListener(messageListener);
+    }
+    if (port) {
+      port.disconnect();
     }
   });
 </script>
