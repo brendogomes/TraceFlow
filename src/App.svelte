@@ -1,6 +1,7 @@
 <script>
   import { onMount, onDestroy } from "svelte";
   import { fly, slide } from "svelte/transition";
+  import html2canvas from "html2canvas";
 
   let requests = [];
   let pendingRequests = [];
@@ -17,6 +18,7 @@
   let statusFilter = "all"; // novo estado para o filtro
   let requestListContainer;
   let port;
+  let requestDetailsElement;
 
   // Função para salvar as requests no sessionStorage
   function saveRequests(updatedRequests) {
@@ -248,6 +250,12 @@
     }
   }
 
+  // Função para copiar como cURL
+  async function copyAsCurl(request) {
+    // Implementação da função copyAsCurl
+    console.log("Copiar como cURL:", request);
+  }
+
   // Detecta o tema do sistema
   function detectSystemTheme() {
     if (
@@ -274,6 +282,88 @@
       return `${urlObj.origin}${urlObj.pathname}`;
     } catch (e) {
       return url;
+    }
+  }
+
+  // Função para tirar screenshot do card de detalhes
+  async function takeScreenshot() {
+    if (!expandedRequestId || !requestDetailsElement) return;
+
+    try {
+      // Encontra todos os elementos com scroll
+      const scrollElements = requestDetailsElement.querySelectorAll(
+        ".overflow-auto, .overflow-y-auto"
+      );
+
+      // Salva os estados originais
+      const originalStates = Array.from(scrollElements).map((el) => ({
+        element: el,
+        height: el.style.height,
+        maxHeight: el.style.maxHeight,
+        overflow: el.style.overflow,
+      }));
+
+      // Remove temporariamente as restrições de altura e scroll
+      scrollElements.forEach((el) => {
+        el.style.height = "auto";
+        el.style.maxHeight = "none";
+        el.style.overflow = "visible";
+      });
+
+      // Configura opções para melhor qualidade
+      const canvas = await html2canvas(requestDetailsElement, {
+        scale: 2,
+        logging: false,
+        useCORS: true,
+        backgroundColor: isDarkMode ? "#1a1a1a" : "#ffffff",
+        height: requestDetailsElement.scrollHeight,
+        width: requestDetailsElement.scrollWidth,
+        scrollY: -window.scrollY,
+        onclone: (clonedDoc) => {
+          // Garante que o clone também tenha os estilos ajustados
+          const clonedElement = clonedDoc.querySelector(".request-details");
+          if (clonedElement) {
+            const clonedScrollElements = clonedElement.querySelectorAll(
+              ".overflow-auto, .overflow-y-auto"
+            );
+            clonedScrollElements.forEach((el) => {
+              el.style.height = "auto";
+              el.style.maxHeight = "none";
+              el.style.overflow = "visible";
+            });
+          }
+        },
+      });
+
+      // Restaura os estados originais
+      originalStates.forEach((state) => {
+        state.element.style.height = state.height;
+        state.element.style.maxHeight = state.maxHeight;
+        state.element.style.overflow = state.overflow;
+      });
+
+      // Converte o canvas para blob
+      const blob = await new Promise((resolve) => {
+        canvas.toBlob(resolve, "image/png");
+      });
+
+      // Cria um objeto URL para download
+      const url = URL.createObjectURL(blob);
+
+      // Cria um link temporário para download
+      const a = document.createElement("a");
+      const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+      const request = requests.find(
+        (request) => request.id === expandedRequestId
+      );
+      a.download = `request-${request.method}-${timestamp}.png`;
+      a.href = url;
+      a.click();
+
+      // Limpa o objeto URL
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Erro ao criar screenshot:", error);
     }
   }
 
@@ -565,17 +655,40 @@
                       ? 'border-gray-700'
                       : 'border-gray-100'} border-t"
                     transition:slide={{ duration: 800 }}
+                    bind:this={requestDetailsElement}
                   >
                     <div class="space-y-3">
                       <!-- Request Details -->
                       <div>
-                        <h4
-                          class="{isDarkMode
-                            ? 'text-gray-300'
-                            : 'text-gray-700'} text-sm font-medium"
-                        >
-                          Request Details
-                        </h4>
+                        <div class="flex justify-between">
+                          <h4
+                            class="{isDarkMode
+                              ? 'text-gray-300'
+                              : 'text-gray-700'} text-sm font-medium"
+                          >
+                            Request Details
+                          </h4>
+                          <button
+                            class="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600"
+                            on:click={takeScreenshot}
+                            title="screenshot"
+                          >
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              class="h-4 w-4 {isDarkMode
+                                ? 'text-gray-400'
+                                : 'text-gray-600'}"
+                              viewBox="0 0 20 20"
+                              fill="currentColor"
+                            >
+                              <path
+                                fill-rule="evenodd"
+                                d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z"
+                                clip-rule="evenodd"
+                              />
+                            </svg>
+                          </button>
+                        </div>
                         <div class="mt-1 space-y-2">
                           <div class="flex">
                             <span
