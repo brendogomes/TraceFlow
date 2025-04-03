@@ -14,14 +14,16 @@ const ignoredTypes = [
   "websocket",
 ];
 
+// Constante para o limite máximo de requisições
+const MAX_REQUESTS = 100;
+
 // Map para armazenar as requisições por aba
 let requestsByTab = new Map();
+// Map para rastrear requestIds ativos
+let activeRequests = new Map();
 let currentTabId = null;
 let port = null;
 let debuggerAttached = new Set();
-
-// Constante para o limite máximo de requisições
-const MAX_REQUESTS = 100;
 
 // Função para verificar se é uma requisição de API
 function isApiRequest(details) {
@@ -29,9 +31,7 @@ function isApiRequest(details) {
     return false;
   }
 
-  if (
-    /\.(css|jpg|jpeg|png|gif|ico|svg|woff|woff2|ttf|eot)$/i.test(details.url)
-  ) {
+  if (/\.(css|jpg|jpeg|png|gif|ico|svg|woff|woff2|ttf|eot)$/i.test(details.url)) {
     return false;
   }
 
@@ -93,22 +93,25 @@ loadRequestsFromStorage();
 // Função para anexar o debugger a uma aba
 async function attachDebugger(tabId) {
   if (debuggerAttached.has(tabId)) return;
-
+  
   try {
     await chrome.debugger.attach({ tabId }, "1.0");
     await chrome.debugger.sendCommand({ tabId }, "Network.enable");
     debuggerAttached.add(tabId);
-
+    
     // Listener para eventos do debugger
     const debuggerListener = async (source, method, params) => {
       if (source.tabId !== tabId) return;
-
+      
       const tabRequests = requestsByTab.get(tabId);
       if (!tabRequests) return;
 
       if (method === "Network.requestWillBeSent") {
-        const request = tabRequests.find((r) => r.url === params.request.url);
+        const request = tabRequests.find(r => r.url === params.request.url);
         if (request) {
+          // Armazena o requestId para usar depois
+          activeRequests.set(params.requestId, request);
+          
           request.requestBody = params.request.postData;
           if (request.requestBody) {
             try {
@@ -123,9 +126,10 @@ async function attachDebugger(tabId) {
           await saveRequestsToStorage();
         }
       }
-
+      
       if (method === "Network.responseReceived") {
-        const request = tabRequests.find((r) => r.url === params.response.url);
+        // Usa o requestId armazenado para encontrar a requisição
+        const request = activeRequests.get(params.requestId);
         if (request) {
           try {
             const response = await chrome.debugger.sendCommand(
@@ -133,27 +137,29 @@ async function attachDebugger(tabId) {
               "Network.getResponseBody",
               { requestId: params.requestId }
             );
-
+            
             if (response.body) {
               try {
                 request.responseBody = JSON.parse(response.body);
               } catch (e) {
                 request.responseBody = response.body;
               }
-
+              
               if (tabId === currentTabId) {
                 await notifyRequestUpdate();
               }
               await saveRequestsToStorage();
             }
           } catch (error) {
-            // Ignora erros ao capturar o corpo da resposta
-            // Isso acontece quando o usuário fecha a notificação sem clicar em cancelar
-            if (!error.message.includes("Debugger is not attached")) {
-              console.debug("Erro ao capturar resposta:", error);
-            }
+            // Remove o request do Map se não conseguir pegar o corpo
+            activeRequests.delete(params.requestId);
           }
         }
+      }
+
+      if (method === "Network.loadingFinished") {
+        // Limpa o requestId do Map quando a requisição termina
+        activeRequests.delete(params.requestId);
       }
     };
 
@@ -166,13 +172,15 @@ async function attachDebugger(tabId) {
         chrome.debugger.onEvent.removeListener(debuggerListener);
         chrome.debugger.onDetach.removeListener(detachListener);
         debuggerAttached.delete(tabId);
+        // Limpa os requests ativos da aba
+        activeRequests.clear();
       }
     };
 
     chrome.debugger.onDetach.addListener(detachListener);
   } catch (error) {
     // Se o erro for de permissão negada, remove o debugger
-    if (error.message.includes("Permission denied")) {
+    if (error.message.includes('Permission denied')) {
       debuggerAttached.delete(tabId);
     }
     console.debug("Erro ao anexar debugger:", error);
@@ -182,7 +190,7 @@ async function attachDebugger(tabId) {
 // Função para desanexar o debugger de uma aba
 async function detachDebugger(tabId) {
   if (!debuggerAttached.has(tabId)) return;
-
+  
   try {
     await chrome.debugger.detach({ tabId });
     debuggerAttached.delete(tabId);
@@ -197,12 +205,12 @@ chrome.runtime.onConnect.addListener((newPort) => {
   port.onDisconnect.addListener(() => {
     port = null;
   });
-
+  
   // Anexa o debugger à aba atual quando o popup é aberto
   if (currentTabId) {
     attachDebugger(currentTabId);
   }
-
+  
   // Envia as requisições atuais quando o popup conecta
   notifyRequestUpdate();
 });
@@ -223,14 +231,14 @@ chrome.webRequest.onBeforeRequest.addListener(
         url: details.url,
         timestamp: formatDate(new Date()),
         type: details.type,
-        status: "pending",
+        status: "pending"
       };
 
       const tabRequests = requestsByTab.get(details.tabId);
-
+      
       // Adiciona a nova requisição no início
       tabRequests.unshift(request);
-
+      
       // Remove a última requisição se exceder o limite
       if (tabRequests.length > MAX_REQUESTS) {
         tabRequests.pop();
@@ -303,24 +311,6 @@ chrome.webRequest.onErrorOccurred.addListener(
   },
   { urls: ["<all_urls>"] }
 );
-
-// Função para limpar as requisições
-async function clearRequests() {
-  try {
-    if (currentTabId) {
-      requestsByTab.set(currentTabId, []);
-      await attachDebugger(currentTabId);
-      // Notifica o popup com array vazio
-      await notifyRequestUpdate();
-      // Reseta o badge
-      updateBadge(0);
-      // Salva o estado
-      await saveRequestsToStorage();
-    }
-  } catch (error) {
-    console.error("Erro ao limpar requisições:", error);
-  }
-}
 
 // Monitora mudanças de aba
 chrome.tabs.onActivated.addListener(async (activeInfo) => {
