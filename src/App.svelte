@@ -290,37 +290,48 @@
     if (!expandedRequestId || !requestDetailsElement) return;
 
     try {
-      // Configura opções para melhor qualidade
-      const canvas = await html2canvas(requestDetailsElement, {
-        scale: 2,
-        logging: false,
-        useCORS: true,
-        backgroundColor: isDarkMode ? "#1a1a1a" : "#ffffff",
-        height: requestDetailsElement.scrollHeight,
-        width: requestDetailsElement.scrollWidth,
-        scrollY: -window.scrollY,
-      });
+      // Salva o padding original
+      const originalPadding = requestDetailsElement.style.padding;
 
-      // Converte o canvas para blob
-      const blob = await new Promise((resolve) => {
-        canvas.toBlob(resolve, "image/png");
-      });
+      // Adiciona padding temporário
+      requestDetailsElement.style.padding = "16px";
 
-      // Cria um objeto URL para download
-      const url = URL.createObjectURL(blob);
+      try {
+        // Configura opções para melhor qualidade
+        const canvas = await html2canvas(requestDetailsElement, {
+          scale: 2,
+          logging: false,
+          useCORS: true,
+          backgroundColor: isDarkMode ? "#1a1a1a" : "#ffffff",
+          height: requestDetailsElement.scrollHeight,
+          width: requestDetailsElement.scrollWidth,
+          scrollY: -window.scrollY,
+        });
 
-      // Cria um link temporário para download
-      const a = document.createElement("a");
-      const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-      const request = requests.find(
-        (request) => request.id === expandedRequestId
-      );
-      a.download = `request-${request.method}-${timestamp}.png`;
-      a.href = url;
-      a.click();
+        // Converte o canvas para blob
+        const blob = await new Promise((resolve) => {
+          canvas.toBlob(resolve, "image/png");
+        });
 
-      // Limpa o objeto URL
-      URL.revokeObjectURL(url);
+        // Cria um objeto URL para download
+        const url = URL.createObjectURL(blob);
+
+        // Cria um link temporário para download
+        const a = document.createElement("a");
+        const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+        const request = requests.find(
+          (request) => request.id === expandedRequestId
+        );
+        a.download = `request-${request.method}-${timestamp}.png`;
+        a.href = url;
+        a.click();
+
+        // Limpa o objeto URL
+        URL.revokeObjectURL(url);
+      } finally {
+        // Restaura o padding original
+        requestDetailsElement.style.padding = originalPadding;
+      }
     } catch (error) {
       console.error("Erro ao criar screenshot:", error);
     }
@@ -678,7 +689,9 @@
                           <!-- Query Parameters Section -->
                           {#if formatQueryParams(request.url).hasParams}
                             <div class="mt-2">
-                              <div class="flex justify-between items-center">
+                              <div
+                                class="flex mb-2 justify-between items-center"
+                              >
                                 <span
                                   class="text-sm font-medium {isDarkMode
                                     ? 'text-gray-300'
@@ -762,7 +775,9 @@
                           <!-- Request Payload -->
                           {#if request.requestBody}
                             <div class="mt-2">
-                              <div class="flex justify-between items-center">
+                              <div
+                                class="flex mb-2 justify-between items-center"
+                              >
                                 <span
                                   class="text-sm font-medium {isDarkMode
                                     ? 'text-gray-300'
@@ -832,7 +847,9 @@
 
                           {#if request.responseBody}
                             <div class="mt-2">
-                              <div class="flex justify-between items-center">
+                              <div
+                                class="flex mb-2 justify-between items-center"
+                              >
                                 <span
                                   class="text-sm font-medium {isDarkMode
                                     ? 'text-gray-300'
