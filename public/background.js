@@ -20,13 +20,18 @@ let currentTabId = null;
 let port = null;
 let debuggerAttached = new Set();
 
+// Constante para o limite máximo de requisições
+const MAX_REQUESTS = 100;
+
 // Função para verificar se é uma requisição de API
 function isApiRequest(details) {
   if (ignoredTypes.includes(details.type)) {
     return false;
   }
 
-  if (/\.(css|jpg|jpeg|png|gif|ico|svg|woff|woff2|ttf|eot)$/i.test(details.url)) {
+  if (
+    /\.(css|jpg|jpeg|png|gif|ico|svg|woff|woff2|ttf|eot)$/i.test(details.url)
+  ) {
     return false;
   }
 
@@ -88,21 +93,21 @@ loadRequestsFromStorage();
 // Função para anexar o debugger a uma aba
 async function attachDebugger(tabId) {
   if (debuggerAttached.has(tabId)) return;
-  
+
   try {
     await chrome.debugger.attach({ tabId }, "1.0");
     await chrome.debugger.sendCommand({ tabId }, "Network.enable");
     debuggerAttached.add(tabId);
-    
+
     // Listener para eventos do debugger
     const debuggerListener = async (source, method, params) => {
       if (source.tabId !== tabId) return;
-      
+
       const tabRequests = requestsByTab.get(tabId);
       if (!tabRequests) return;
 
       if (method === "Network.requestWillBeSent") {
-        const request = tabRequests.find(r => r.url === params.request.url);
+        const request = tabRequests.find((r) => r.url === params.request.url);
         if (request) {
           request.requestBody = params.request.postData;
           if (request.requestBody) {
@@ -118,9 +123,9 @@ async function attachDebugger(tabId) {
           await saveRequestsToStorage();
         }
       }
-      
+
       if (method === "Network.responseReceived") {
-        const request = tabRequests.find(r => r.url === params.response.url);
+        const request = tabRequests.find((r) => r.url === params.response.url);
         if (request) {
           try {
             const response = await chrome.debugger.sendCommand(
@@ -128,14 +133,14 @@ async function attachDebugger(tabId) {
               "Network.getResponseBody",
               { requestId: params.requestId }
             );
-            
+
             if (response.body) {
               try {
                 request.responseBody = JSON.parse(response.body);
               } catch (e) {
                 request.responseBody = response.body;
               }
-              
+
               if (tabId === currentTabId) {
                 await notifyRequestUpdate();
               }
@@ -144,7 +149,7 @@ async function attachDebugger(tabId) {
           } catch (error) {
             // Ignora erros ao capturar o corpo da resposta
             // Isso acontece quando o usuário fecha a notificação sem clicar em cancelar
-            if (!error.message.includes('Debugger is not attached')) {
+            if (!error.message.includes("Debugger is not attached")) {
               console.debug("Erro ao capturar resposta:", error);
             }
           }
@@ -167,7 +172,7 @@ async function attachDebugger(tabId) {
     chrome.debugger.onDetach.addListener(detachListener);
   } catch (error) {
     // Se o erro for de permissão negada, remove o debugger
-    if (error.message.includes('Permission denied')) {
+    if (error.message.includes("Permission denied")) {
       debuggerAttached.delete(tabId);
     }
     console.debug("Erro ao anexar debugger:", error);
@@ -177,7 +182,7 @@ async function attachDebugger(tabId) {
 // Função para desanexar o debugger de uma aba
 async function detachDebugger(tabId) {
   if (!debuggerAttached.has(tabId)) return;
-  
+
   try {
     await chrome.debugger.detach({ tabId });
     debuggerAttached.delete(tabId);
@@ -192,12 +197,12 @@ chrome.runtime.onConnect.addListener((newPort) => {
   port.onDisconnect.addListener(() => {
     port = null;
   });
-  
+
   // Anexa o debugger à aba atual quando o popup é aberto
   if (currentTabId) {
     attachDebugger(currentTabId);
   }
-  
+
   // Envia as requisições atuais quando o popup conecta
   notifyRequestUpdate();
 });
@@ -218,13 +223,16 @@ chrome.webRequest.onBeforeRequest.addListener(
         url: details.url,
         timestamp: formatDate(new Date()),
         type: details.type,
-        status: "pending"
+        status: "pending",
       };
 
       const tabRequests = requestsByTab.get(details.tabId);
+
+      // Adiciona a nova requisição no início
       tabRequests.unshift(request);
 
-      if (tabRequests.length > 100) {
+      // Remove a última requisição se exceder o limite
+      if (tabRequests.length > MAX_REQUESTS) {
         tabRequests.pop();
       }
 
@@ -232,7 +240,6 @@ chrome.webRequest.onBeforeRequest.addListener(
         updateBadge(tabRequests.length);
         await notifyRequestUpdate();
       }
-
       await saveRequestsToStorage();
     } catch (error) {
       console.error("Erro ao capturar requisição:", error);
@@ -240,6 +247,12 @@ chrome.webRequest.onBeforeRequest.addListener(
   },
   { urls: ["<all_urls>"] }
 );
+
+// Função para atualizar o contador no ícone da extensão
+function updateBadge(count) {
+  chrome.action.setBadgeText({ text: count > 0 ? count.toString() : "" });
+  chrome.action.setBadgeBackgroundColor({ color: "#666666" });
+}
 
 // Listener para respostas
 chrome.webRequest.onCompleted.addListener(
@@ -291,24 +304,45 @@ chrome.webRequest.onErrorOccurred.addListener(
   { urls: ["<all_urls>"] }
 );
 
+// Função para limpar as requisições
+async function clearRequests() {
+  try {
+    if (currentTabId) {
+      requestsByTab.set(currentTabId, []);
+      await attachDebugger(currentTabId);
+      // Notifica o popup com array vazio
+      await notifyRequestUpdate();
+      // Reseta o badge
+      updateBadge(0);
+      // Salva o estado
+      await saveRequestsToStorage();
+    }
+  } catch (error) {
+    console.error("Erro ao limpar requisições:", error);
+  }
+}
+
 // Monitora mudanças de aba
 chrome.tabs.onActivated.addListener(async (activeInfo) => {
   try {
     currentTabId = activeInfo.tabId;
-    // Limpa o array de requisições da aba anterior
-    requestsByTab.clear();
-    // Inicializa o array vazio para a nova aba
-    requestsByTab.set(currentTabId, []);
+
+    // Zera o contador ao mudar de aba
+    updateBadge(0);
+
+    // Atualiza as requisições no popup
+    if (port) {
+      const requests = requestsByTab.get(currentTabId) || [];
+      port.postMessage({
+        type: "REQUEST_UPDATE",
+        requests: Array.from(requests),
+      });
+    }
+
     // Anexa o debugger à nova aba
     await attachDebugger(currentTabId);
-    // Notifica o popup com array vazio
-    await notifyRequestUpdate();
-    // Reseta o badge
-    updateBadge(0);
-    // Salva o estado
-    await saveRequestsToStorage();
   } catch (error) {
-    console.error("Erro ao monitorar mudança de aba:", error);
+    console.error("Erro ao mudar de aba:", error);
   }
 });
 
@@ -322,35 +356,3 @@ chrome.tabs.onRemoved.addListener(async (tabId) => {
     console.error("Erro ao monitorar fechamento de aba:", error);
   }
 });
-
-// Função para atualizar o badge
-function updateBadge(count) {
-  try {
-    chrome.action.setBadgeText({
-      text: count.toString(),
-    });
-  } catch (error) {
-    console.error("Erro ao atualizar o badge:", error);
-  }
-}
-
-// Limpa as requisições antigas a cada minuto
-setInterval(async () => {
-  try {
-    for (const [tabId, requests] of requestsByTab.entries()) {
-      const fiveMinutesAgo = Date.now() - 5 * 60 * 1000;
-      const filteredRequests = requests.filter((request) => {
-        return new Date(request.timestamp).getTime() > fiveMinutesAgo;
-      });
-      requestsByTab.set(tabId, filteredRequests);
-
-      if (tabId === currentTabId) {
-        updateBadge(filteredRequests.length);
-        await notifyRequestUpdate();
-      }
-    }
-    await saveRequestsToStorage();
-  } catch (error) {
-    console.error("Erro ao limpar requisições antigas:", error);
-  }
-}, 60000);
