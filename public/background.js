@@ -326,16 +326,24 @@ async function clearRequests() {
 chrome.tabs.onActivated.addListener(async (activeInfo) => {
   try {
     currentTabId = activeInfo.tabId;
-
+    
     // Zera o contador ao mudar de aba
     updateBadge(0);
 
+    // Limpa o storage
+    await chrome.storage.local.clear();
+
+    // Limpa o Map de requisições da aba anterior
+    requestsByTab.clear();
+    
+    // Inicializa array vazio para a nova aba
+    requestsByTab.set(currentTabId, []);
+
     // Atualiza as requisições no popup
     if (port) {
-      const requests = requestsByTab.get(currentTabId) || [];
       port.postMessage({
         type: "REQUEST_UPDATE",
-        requests: Array.from(requests),
+        requests: [],
       });
     }
 
