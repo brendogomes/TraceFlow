@@ -2,14 +2,8 @@
   "manifest_version": 3,
   "name": "TraceFlow",
   "version": "1.0.0",
-  "description": "HTTP Request Tracing Extension",
-  "permissions": [
-    "webRequest",
-    "storage",
-    "activeTab",
-    "tabs",
-    "debugger"
-  ],
+  "description": "Extensão de rastreamento de solicitação HTTP",
+  "permissions": ["webRequest", "storage", "activeTab", "tabs", "debugger"],
   "host_permissions": ["<all_urls>"],
   "action": {
     "default_popup": "index.html",
