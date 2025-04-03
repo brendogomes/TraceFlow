@@ -250,12 +250,6 @@
     }
   }
 
-  // Função para copiar como cURL
-  async function copyAsCurl(request) {
-    // Implementação da função copyAsCurl
-    console.log("Copiar como cURL:", request);
-  }
-
   // Detecta o tema do sistema
   function detectSystemTheme() {
     if (
