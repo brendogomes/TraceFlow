@@ -94,7 +94,8 @@ async function attachDebugger(tabId) {
     await chrome.debugger.sendCommand({ tabId }, "Network.enable");
     debuggerAttached.add(tabId);
     
-    chrome.debugger.onEvent.addListener(async (source, method, params) => {
+    // Listener para eventos do debugger
+    const debuggerListener = async (source, method, params) => {
       if (source.tabId !== tabId) return;
       
       const tabRequests = requestsByTab.get(tabId);
@@ -141,12 +142,34 @@ async function attachDebugger(tabId) {
               await saveRequestsToStorage();
             }
           } catch (error) {
-            console.debug("Não foi possível capturar o corpo da resposta:", error);
+            // Ignora erros ao capturar o corpo da resposta
+            // Isso acontece quando o usuário fecha a notificação sem clicar em cancelar
+            if (!error.message.includes('Debugger is not attached')) {
+              console.debug("Erro ao capturar resposta:", error);
+            }
           }
         }
       }
-    });
+    };
+
+    // Adiciona o listener e guarda a referência
+    chrome.debugger.onEvent.addListener(debuggerListener);
+
+    // Listener para detecção de desanexação do debugger
+    const detachListener = (debuggee) => {
+      if (debuggee.tabId === tabId) {
+        chrome.debugger.onEvent.removeListener(debuggerListener);
+        chrome.debugger.onDetach.removeListener(detachListener);
+        debuggerAttached.delete(tabId);
+      }
+    };
+
+    chrome.debugger.onDetach.addListener(detachListener);
   } catch (error) {
+    // Se o erro for de permissão negada, remove o debugger
+    if (error.message.includes('Permission denied')) {
+      debuggerAttached.delete(tabId);
+    }
     console.debug("Erro ao anexar debugger:", error);
   }
 }
