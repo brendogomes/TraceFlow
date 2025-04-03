@@ -641,11 +641,13 @@
                           ? 'text-blue-500'
                           : request.method === 'POST'
                             ? 'text-green-500'
-                            : request.method === 'DELETE'
-                              ? 'text-red-500'
-                              : isDarkMode
-                                ? 'text-gray-400'
-                                : 'text-gray-600'}">{request.method}</span
+                            : request.method === 'PUT'
+                              ? 'text-amber-500'
+                              : request.method === 'DELETE'
+                                ? 'text-red-500'
+                                : isDarkMode
+                                  ? 'text-gray-400'
+                                  : 'text-gray-600'}">{request.method}</span
                       >
                       <span
                         class="{isDarkMode
