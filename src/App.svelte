@@ -290,26 +290,6 @@
     if (!expandedRequestId || !requestDetailsElement) return;
 
     try {
-      // Encontra todos os elementos com scroll
-      const scrollElements = requestDetailsElement.querySelectorAll(
-        ".overflow-auto, .overflow-y-auto"
-      );
-
-      // Salva os estados originais
-      const originalStates = Array.from(scrollElements).map((el) => ({
-        element: el,
-        height: el.style.height,
-        maxHeight: el.style.maxHeight,
-        overflow: el.style.overflow,
-      }));
-
-      // Remove temporariamente as restrições de altura e scroll
-      scrollElements.forEach((el) => {
-        el.style.height = "auto";
-        el.style.maxHeight = "none";
-        el.style.overflow = "visible";
-      });
-
       // Configura opções para melhor qualidade
       const canvas = await html2canvas(requestDetailsElement, {
         scale: 2,
@@ -319,27 +299,6 @@
         height: requestDetailsElement.scrollHeight,
         width: requestDetailsElement.scrollWidth,
         scrollY: -window.scrollY,
-        onclone: (clonedDoc) => {
-          // Garante que o clone também tenha os estilos ajustados
-          const clonedElement = clonedDoc.querySelector(".request-details");
-          if (clonedElement) {
-            const clonedScrollElements = clonedElement.querySelectorAll(
-              ".overflow-auto, .overflow-y-auto"
-            );
-            clonedScrollElements.forEach((el) => {
-              el.style.height = "auto";
-              el.style.maxHeight = "none";
-              el.style.overflow = "visible";
-            });
-          }
-        },
-      });
-
-      // Restaura os estados originais
-      originalStates.forEach((state) => {
-        state.element.style.height = state.height;
-        state.element.style.maxHeight = state.maxHeight;
-        state.element.style.overflow = state.overflow;
       });
 
       // Converte o canvas para blob
@@ -684,7 +643,6 @@
                               <path
                                 fill-rule="evenodd"
                                 d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z"
-                                clip-rule="evenodd"
                               />
                             </svg>
                           </button>
@@ -701,6 +659,19 @@
                                 ? 'text-gray-400'
                                 : 'text-gray-600'}"
                               >{formatUrl(request.url)}</span
+                            >
+                          </div>
+
+                          <div class="flex">
+                            <span
+                              class="font-medium {isDarkMode
+                                ? 'text-gray-400'
+                                : 'text-gray-600'}">Status code:</span
+                            >
+                            <span
+                              class="ml-2 break-all {isDarkMode
+                                ? 'text-gray-400'
+                                : 'text-gray-600'}">{request.status}</span
                             >
                           </div>
 
