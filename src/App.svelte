@@ -2,7 +2,8 @@
   import { onMount, onDestroy } from "svelte";
   import { fly, slide } from "svelte/transition";
   import html2canvas from "html2canvas";
-  import { t } from "svelte-i18n";
+  import { t, locale } from "svelte-i18n";
+  import FlagIcons from "./components/FlagIcons.svelte";
 
   let requests = [];
   let pendingRequests = [];
@@ -332,7 +333,20 @@
     }
   }
 
-  onMount(async () => {
+  // Função para alternar o idioma
+  function toggleLanguage() {
+    $locale = $locale === "pt-BR" ? "en" : "pt-BR";
+    // Salva a preferência no localStorage
+    localStorage.setItem("traceflow_language", $locale);
+  }
+
+  // Carrega a preferência de idioma ao iniciar
+  onMount(() => {
+    const savedLanguage = localStorage.getItem("traceflow_language");
+    if (savedLanguage) {
+      $locale = savedLanguage;
+    }
+
     // Conecta com o background script
     port = chrome.runtime.connect();
 
@@ -345,7 +359,7 @@
     });
 
     // Inicializa a aba atual e configura os listeners
-    await updateCurrentTab();
+    updateCurrentTab();
 
     // Listener para mudança de aba
     chrome.tabs.onActivated.addListener(async (activeInfo) => {
@@ -397,20 +411,58 @@
         ? 'border-gray-700 bg-gray-800'
         : 'border-gray-200 bg-white'}"
     >
-      <div class="flex items-center">
-        <img
-          src="/assets/svg/trace-flow-logo.svg"
-          alt="TraceFlow Logo"
-          class="w-8 h-8 mr-2"
-        />
-        <h1
-          class="text-lg font-medium {isDarkMode
-            ? 'text-white'
-            : 'text-gray-900'}"
-        >
-          {$t("app.title")}
-        </h1>
+      <div class="flex items-center justify-between">
+        <div class="flex items-center">
+          <img
+            src="/assets/svg/trace-flow-logo.svg"
+            alt="TraceFlow"
+            class="h-8 w-8 mr-2"
+          />
+          <h1
+            class="text-lg font-semibold {isDarkMode
+              ? 'text-gray-100'
+              : 'text-gray-900'}"
+          >
+            {$t("app.title")}
+          </h1>
+        </div>
+        <div class="flex items-center space-x-2">
+          <!-- Language Toggle Button -->
+          <button
+            class="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            title={$t("app.language")}
+            on:click={toggleLanguage}
+          >
+            <FlagIcons type={$locale === "pt-BR" ? "brazil" : "usa"} />
+          </button>
+          <!-- Clear Button -->
+          <button
+            class="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            title={$t("actions.clear")}
+            on:click={() => {
+              requests = [];
+              pendingRequests = [];
+              expandedRequestId = null;
+              saveRequests([]);
+            }}
+          >
+            <svg
+              class="w-5 h-5 {isDarkMode ? 'text-gray-300' : 'text-gray-600'}"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+              />
+            </svg>
+          </button>
+        </div>
       </div>
+
       <div class="mt-3">
         <div class="mb-3">
           <input
@@ -436,7 +488,7 @@
                 {isDarkMode
                   ? 'border-gray-600 peer-checked:border-blue-500'
                   : 'border-gray-300 peer-checked:border-blue-600'} 
-                peer-checked:bg-current relative flex items-center justify-center"
+                 relative flex items-center justify-center"
               >
                 <div
                   class="w-2 h-2 rounded-full bg-blue-500 opacity-0 peer-checked:opacity-100 transition-opacity duration-200"
@@ -464,7 +516,7 @@
                 {isDarkMode
                   ? 'border-gray-600 peer-checked:border-blue-500'
                   : 'border-gray-300 peer-checked:border-blue-600'} 
-                peer-checked:bg-current relative flex items-center justify-center"
+                 relative flex items-center justify-center"
               >
                 <div
                   class="w-2 h-2 rounded-full bg-blue-500 opacity-0 peer-checked:opacity-100 transition-opacity duration-200"
@@ -492,7 +544,7 @@
                 {isDarkMode
                   ? 'border-gray-600 peer-checked:border-blue-500'
                   : 'border-gray-300 peer-checked:border-blue-600'} 
-                peer-checked:bg-current relative flex items-center justify-center"
+                 relative flex items-center justify-center"
               >
                 <div
                   class="w-2 h-2 rounded-full bg-blue-500 opacity-0 peer-checked:opacity-100 transition-opacity duration-200"

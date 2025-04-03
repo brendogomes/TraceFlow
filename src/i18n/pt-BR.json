@@ -1,7 +1,8 @@
 {
   "app": {
     "title": "TraceFlow",
-    "description": "Monitore e analise requisições HTTP em tempo real"
+    "description": "Monitore e analise requisições HTTP em tempo real",
+    "language": "Idioma"
   },
   "filters": {
     "search": "Buscar requisições...",

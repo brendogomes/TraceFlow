@@ -1,7 +1,8 @@
 {
   "app": {
     "title": "TraceFlow",
-    "description": "Monitor and analyze HTTP requests in real time"
+    "description": "Monitor and analyze HTTP requests in real time",
+    "language": "Language"
   },
   "filters": {
     "search": "Search requests...",
