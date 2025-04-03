@@ -131,7 +131,10 @@
   $: filteredRequests = requests.filter((request) => {
     expandedRequestId = null;
     // Primeiro aplica o filtro de status
-    if (statusFilter === "error" && (!request.status || request.status < 400)) {
+    if (
+      statusFilter === "error" &&
+      (request.status === "pending" || request.status < 400)
+    ) {
       return false;
     }
     if (
@@ -908,7 +911,7 @@
                                   >{$t("request.responseBody")}</span
                                 >
                                 <button
-                                  class="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600"
+                                  class="p-1 rounded hover:bg-gray-200 border-none dark:hover:bg-gray-600"
                                   on:click|stopPropagation={() =>
                                     copyToClipboard(
                                       JSON.stringify(
