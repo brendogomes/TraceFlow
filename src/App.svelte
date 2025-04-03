@@ -550,7 +550,7 @@
               >
                 <!-- Timeline dot -->
                 <div
-                  class="absolute left-[0.7rem] top-[50%] -translate-y-[50%] w-[2rem] h-[2rem] rounded-full border-2 flex items-center justify-center {getStatusClass(
+                  class="absolute left-[0.7rem] top-[50%] -translate-y-[50%] w-[2rem] h-[2rem] rounded-full border-1 flex items-center justify-center {getStatusClass(
                     request.status || 'pending'
                   )
                     .replace('bg-', 'border-')
