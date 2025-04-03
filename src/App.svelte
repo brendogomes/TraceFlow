@@ -403,11 +403,11 @@
   });
 </script>
 
-<main class="w-[600px] h-[600px] {isDarkMode ? 'bg-gray-900' : 'bg-white'}">
+<main class="w-[100vw] h-[600px] {isDarkMode ? 'bg-gray-900' : 'bg-white'}">
   <div class="h-full flex flex-col">
     <!-- Header -->
     <div
-      class="flex-none w-[600px] px-4 py-3 pb-0 border-b {isDarkMode
+      class="flex-none px-4 py-3 pb-0 border-b {isDarkMode
         ? 'border-gray-700 bg-gray-800'
         : 'border-gray-200 bg-white'}"
     >
@@ -429,7 +429,7 @@
         <div class="flex items-center space-x-2">
           <!-- Language Toggle Button -->
           <button
-            class="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            class="p-2 rounded-md hover:bg-gray-100 border-none dark:hover:bg-gray-700 transition-colors"
             title={$t("app.language")}
             on:click={toggleLanguage}
           >
@@ -437,7 +437,7 @@
           </button>
           <!-- Clear Button -->
           <button
-            class="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            class="p-2 rounded-md hover:bg-gray-100 border-none dark:hover:bg-gray-700 transition-colors"
             title={$t("actions.clear")}
             on:click={() => {
               requests = [];
@@ -565,7 +565,7 @@
 
     <!-- Timeline -->
     <div
-      class="flex-1 w-[600px] overflow-y-auto pl-2 p-4 {isDarkMode
+      class="flex-1 overflow-y-auto pl-2 p-4 {isDarkMode
         ? 'bg-gray-900'
         : 'bg-white'}"
       bind:this={requestListContainer}
@@ -689,7 +689,7 @@
                             {$t("request.details")}
                           </h4>
                           <button
-                            class="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600"
+                            class="p-1 rounded hover:bg-gray-200 border-none dark:hover:bg-gray-600"
                             on:click={takeScreenshot}
                             title="screenshot"
                           >
@@ -750,7 +750,7 @@
                                   {$t("request.query")}
                                 </span>
                                 <button
-                                  class="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600"
+                                  class="p-1 rounded hover:bg-gray-200 border-none dark:hover:bg-gray-600"
                                   on:click|stopPropagation={() => {
                                     const params = formatQueryParams(
                                       request.url
@@ -835,7 +835,7 @@
                                   >{$t("request.payload")}</span
                                 >
                                 <button
-                                  class="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600"
+                                  class="p-1 rounded hover:bg-gray-200 border-none dark:hover:bg-gray-600"
                                   on:click|stopPropagation={() =>
                                     copyToClipboard(
                                       JSON.stringify(
