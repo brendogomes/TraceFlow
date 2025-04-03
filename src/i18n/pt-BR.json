@@ -1,0 +1,44 @@
+{
+  "app": {
+    "title": "TraceFlow",
+    "description": "Monitore e analise requisições HTTP em tempo real"
+  },
+  "filters": {
+    "search": "Buscar requisições...",
+    "all": "Todas",
+    "pending": "Pendentes",
+    "success": "Sucesso",
+    "error": "Erro",
+    "noResults": "Nenhuma requisição encontrada.",
+    "noRequests": "Nenhuma requisição capturada."
+  },
+  "request": {
+    "details": "Detalhes da Requisição",
+    "payload": "Payload",
+    "method": "Método",
+    "url": "URL",
+    "status": "Status",
+    "time": "Tempo",
+    "size": "Tamanho",
+    "type": "Tipo",
+    "headers": "Cabeçalhos",
+    "query": "Parâmetros de Query",
+    "body": "Corpo",
+    "responseBody": "Corpo da Resposta",
+    "response": "Resposta",
+    "copy": {
+      "url": "Copiar URL",
+      "curl": "Copiar como cURL",
+      "success": "Copiado!"
+    }
+  },
+  "actions": {
+    "clear": "Limpar Tudo",
+    "screenshot": "Capturar Tela",
+    "theme": "Alternar Tema"
+  },
+  "errors": {
+    "screenshot": "Erro ao criar screenshot",
+    "copy": "Erro ao copiar para área de transferência"
+  }
+}

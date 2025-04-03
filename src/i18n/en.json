@@ -1,0 +1,44 @@
+{
+  "app": {
+    "title": "TraceFlow",
+    "description": "Monitor and analyze HTTP requests in real time"
+  },
+  "filters": {
+    "search": "Search requests...",
+    "all": "All",
+    "pending": "Pending",
+    "success": "Success",
+    "error": "Error",
+    "noResults": "No requests match your search.",
+    "noRequests": "No requests captured yet."
+  },
+  "request": {
+    "details": "Request Details",
+    "payload": "Payload",
+    "method": "Method",
+    "url": "URL",
+    "status": "Status",
+    "time": "Time",
+    "size": "Size",
+    "type": "Type",
+    "headers": "Headers",
+    "query": "Query Parameters",
+    "body": "Body",
+    "responseBody": "Response Body",
+    "response": "Response",
+    "copy": {
+      "url": "Copy URL",
+      "curl": "Copy as cURL",
+      "success": "Copied!"
+    }
+  },
+  "actions": {
+    "clear": "Clear All",
+    "screenshot": "Take Screenshot",
+    "theme": "Toggle Theme"
+  },
+  "errors": {
+    "screenshot": "Error creating screenshot",
+    "copy": "Error copying to clipboard"
+  }
+}

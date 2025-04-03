@@ -2,6 +2,7 @@
   import { onMount, onDestroy } from "svelte";
   import { fly, slide } from "svelte/transition";
   import html2canvas from "html2canvas";
+  import { t } from "svelte-i18n";
 
   let requests = [];
   let pendingRequests = [];
@@ -407,14 +408,14 @@
             ? 'text-white'
             : 'text-gray-900'}"
         >
-          TraceFlow
+          {$t("app.title")}
         </h1>
       </div>
       <div class="mt-3">
         <div class="mb-3">
           <input
             type="text"
-            placeholder="Search requests..."
+            placeholder={$t("filters.search")}
             bind:value={searchQuery}
             class="w-full px-3 py-2 border rounded-lg {isDarkMode
               ? 'bg-gray-700 border-gray-600 text-gray-200'
@@ -445,7 +446,8 @@
                 class="ml-2 text-sm font-medium transition-colors duration-200
                 {isDarkMode
                   ? 'text-gray-300 group-hover:text-gray-200'
-                  : 'text-gray-700 group-hover:text-gray-900'}">All</span
+                  : 'text-gray-700 group-hover:text-gray-900'}"
+                >{$t("filters.all")}</span
               >
             </label>
 
@@ -472,7 +474,8 @@
                 class="ml-2 text-sm font-medium transition-colors duration-200
                 {isDarkMode
                   ? 'text-gray-300 group-hover:text-gray-200'
-                  : 'text-gray-700 group-hover:text-gray-900'}">Success</span
+                  : 'text-gray-700 group-hover:text-gray-900'}"
+                >{$t("filters.success")}</span
               >
             </label>
 
@@ -499,7 +502,8 @@
                 class="ml-2 text-sm font-medium transition-colors duration-200
                 {isDarkMode
                   ? 'text-gray-300 group-hover:text-gray-200'
-                  : 'text-gray-700 group-hover:text-gray-900'}">Error</span
+                  : 'text-gray-700 group-hover:text-gray-900'}"
+                >{$t("filters.error")}</span
               >
             </label>
           </div>
@@ -520,7 +524,7 @@
             ? 'text-gray-400'
             : 'text-gray-500'} mt-4"
         >
-          No requests captured yet. Browse some pages to see the requests.
+          {$t("filters.noRequests")}
         </div>
       {:else if filteredRequests.length === 0}
         <div
@@ -528,7 +532,7 @@
             ? 'text-gray-400'
             : 'text-gray-500'} mt-4"
         >
-          No requests match your search.
+          {$t("filters.noResults")}
         </div>
       {:else}
         <div class="relative">
@@ -630,7 +634,7 @@
                               ? 'text-gray-300'
                               : 'text-gray-700'} text-sm font-medium"
                           >
-                            Request Details
+                            {$t("request.details")}
                           </h4>
                           <button
                             class="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600"
@@ -671,7 +675,7 @@
                             <span
                               class="font-medium {isDarkMode
                                 ? 'text-gray-400'
-                                : 'text-gray-600'}">Status code:</span
+                                : 'text-gray-600'}">{$t("request.status")}</span
                             >
                             <span
                               class="ml-2 break-all {isDarkMode
@@ -691,7 +695,7 @@
                                     ? 'text-gray-300'
                                     : 'text-gray-700'}"
                                 >
-                                  Query Parameters:
+                                  {$t("request.query")}
                                 </span>
                                 <button
                                   class="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600"
@@ -775,7 +779,8 @@
                                 <span
                                   class="text-sm font-medium {isDarkMode
                                     ? 'text-gray-300'
-                                    : 'text-gray-700'}">Request Payload:</span
+                                    : 'text-gray-700'}"
+                                  >{$t("request.payload")}</span
                                 >
                                 <button
                                   class="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600"
@@ -847,7 +852,8 @@
                                 <span
                                   class="text-sm font-medium {isDarkMode
                                     ? 'text-gray-300'
-                                    : 'text-gray-700'}">Response Body:</span
+                                    : 'text-gray-700'}"
+                                  >{$t("request.responseBody")}</span
                                 >
                                 <button
                                   class="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600"
