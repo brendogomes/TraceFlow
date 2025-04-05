@@ -4,6 +4,7 @@
   import html2canvas from "html2canvas";
   import { t, locale } from "svelte-i18n";
   import FlagIcons from "./components/FlagIcons.svelte";
+  import Header from "./components/Header.svelte";
 
   let requests = [];
   let pendingRequests = [];
@@ -408,163 +409,11 @@
 
 <main class="w-[100vw] h-[600px] {isDarkMode ? 'bg-gray-900' : 'bg-white'}">
   <div class="h-full flex flex-col">
-    <!-- Header -->
-    <div
-      class="flex-none px-4 py-3 pb-0 border-b {isDarkMode
-        ? 'border-gray-700 bg-gray-800'
-        : 'border-gray-200 bg-white'}"
-    >
-      <div class="flex items-center justify-between">
-        <div class="flex items-center">
-          <img
-            src="/assets/svg/trace-flow-logo.svg"
-            alt="TraceFlow"
-            class="h-8 w-8 mr-2"
-          />
-          <h1
-            class="text-lg font-semibold {isDarkMode
-              ? 'text-gray-100'
-              : 'text-gray-900'}"
-          >
-            {$t("app.title")}
-          </h1>
-        </div>
-        <div class="flex items-center space-x-2">
-          <!-- Language Toggle Button -->
-          <button
-            class="p-2 rounded-md hover:bg-gray-100 border-none dark:hover:bg-gray-700 transition-colors"
-            title={$t("app.language")}
-            on:click={toggleLanguage}
-          >
-            <FlagIcons type={$locale === "pt-BR" ? "brazil" : "usa"} />
-          </button>
-          <!-- Clear Button -->
-          <button
-            class="p-2 rounded-md hover:bg-gray-100 border-none dark:hover:bg-gray-700 transition-colors"
-            title={$t("actions.clear")}
-            on:click={() => {
-              requests = [];
-              pendingRequests = [];
-              expandedRequestId = null;
-              saveRequests([]);
-            }}
-          >
-            <svg
-              class="w-5 h-5 {isDarkMode ? 'text-gray-300' : 'text-gray-600'}"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-              />
-            </svg>
-          </button>
-        </div>
-      </div>
-
-      <div class="mt-3">
-        <div class="mb-3">
-          <input
-            type="text"
-            placeholder={$t("filters.search")}
-            bind:value={searchQuery}
-            class="w-full px-3 py-2 border rounded-lg {isDarkMode
-              ? 'bg-gray-700 border-gray-600 text-gray-200'
-              : 'bg-white border-gray-300 text-gray-700'}"
-          />
-          <!-- Status Filter -->
-          <div class="mt-3 flex items-center justify-center space-x-6">
-            <label class="relative flex items-center group cursor-pointer">
-              <input
-                type="radio"
-                class="peer sr-only"
-                name="status"
-                value="all"
-                bind:group={statusFilter}
-              />
-              <div
-                class="w-4 h-4 border-2 rounded-full transition-colors duration-200
-                {isDarkMode
-                  ? 'border-gray-600 peer-checked:border-blue-500'
-                  : 'border-gray-300 peer-checked:border-blue-600'} 
-                 relative flex items-center justify-center"
-              >
-                <div
-                  class="w-2 h-2 rounded-full bg-blue-500 opacity-0 peer-checked:opacity-100 transition-opacity duration-200"
-                ></div>
-              </div>
-              <span
-                class="ml-2 text-sm font-medium transition-colors duration-200
-                {isDarkMode
-                  ? 'text-gray-300 group-hover:text-gray-200'
-                  : 'text-gray-700 group-hover:text-gray-900'}"
-                >{$t("filters.all")}</span
-              >
-            </label>
-
-            <label class="relative flex items-center group cursor-pointer">
-              <input
-                type="radio"
-                class="peer sr-only"
-                name="status"
-                value="success"
-                bind:group={statusFilter}
-              />
-              <div
-                class="w-4 h-4 border-2 rounded-full transition-colors duration-200
-                {isDarkMode
-                  ? 'border-gray-600 peer-checked:border-blue-500'
-                  : 'border-gray-300 peer-checked:border-blue-600'} 
-                 relative flex items-center justify-center"
-              >
-                <div
-                  class="w-2 h-2 rounded-full bg-blue-500 opacity-0 peer-checked:opacity-100 transition-opacity duration-200"
-                ></div>
-              </div>
-              <span
-                class="ml-2 text-sm font-medium transition-colors duration-200
-                {isDarkMode
-                  ? 'text-gray-300 group-hover:text-gray-200'
-                  : 'text-gray-700 group-hover:text-gray-900'}"
-                >{$t("filters.success")}</span
-              >
-            </label>
-
-            <label class="relative flex items-center group cursor-pointer">
-              <input
-                type="radio"
-                class="peer sr-only"
-                name="status"
-                value="error"
-                bind:group={statusFilter}
-              />
-              <div
-                class="w-4 h-4 border-2 rounded-full transition-colors duration-200
-                {isDarkMode
-                  ? 'border-gray-600 peer-checked:border-blue-500'
-                  : 'border-gray-300 peer-checked:border-blue-600'} 
-                 relative flex items-center justify-center"
-              >
-                <div
-                  class="w-2 h-2 rounded-full bg-blue-500 opacity-0 peer-checked:opacity-100 transition-opacity duration-200"
-                ></div>
-              </div>
-              <span
-                class="ml-2 text-sm font-medium transition-colors duration-200
-                {isDarkMode
-                  ? 'text-gray-300 group-hover:text-gray-200'
-                  : 'text-gray-700 group-hover:text-gray-900'}"
-                >{$t("filters.error")}</span
-              >
-            </label>
-          </div>
-        </div>
-      </div>
-    </div>
+    <Header 
+      bind:isDarkMode
+      bind:statusFilter
+      bind:searchQuery
+    />
 
     <!-- Timeline -->
     <div
