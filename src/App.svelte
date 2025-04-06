@@ -654,7 +654,7 @@
                                 <div
                                   class="text-xs {isDarkMode
                                     ? 'text-gray-300'
-                                    : 'text-gray-700'}"
+                                    : 'text-gray-700'} max-h-48 overflow-y-auto custom-scrollbar"
                                 >
                                   {#each formatQueryParams(request.url).params as param}
                                     <div class="flex items-start py-1">
