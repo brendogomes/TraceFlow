@@ -7,43 +7,38 @@
   export let searchQuery = "";
   let isPopup = true;
 
-  // Verifica se está em uma janela popup ou não
   chrome.windows.getCurrent((window) => {
     isPopup = window.type === "popup";
   });
 
   async function openInNewWindow() {
     try {
-      // Primeiro procura por janelas existentes do TraceFlow
       const windows = await chrome.windows.getAll({ populate: true });
       const traceflowUrl = chrome.runtime.getURL("index.html");
-      
-      // Procura por uma janela do TraceFlow
-      const traceflowWindow = windows.find(window => 
-        window.type === "popup" && 
-        window.tabs && 
-        window.tabs.some(tab => tab.url === traceflowUrl)
+
+      const traceflowWindow = windows.find(
+        (window) =>
+          window.type === "popup" &&
+          window.tabs &&
+          window.tabs.some((tab) => tab.url === traceflowUrl)
       );
 
       if (traceflowWindow) {
-        // Se encontrou uma janela, foca nela
-        await chrome.windows.update(traceflowWindow.id, { 
+        await chrome.windows.update(traceflowWindow.id, {
           focused: true,
-          drawAttention: true
+          drawAttention: true,
         });
       } else {
-        // Se não encontrou, cria uma nova
         await chrome.windows.create({
           url: traceflowUrl,
           type: "popup",
           width: 1200,
           height: 800,
           left: 50,
-          top: 50
+          top: 50,
         });
       }
 
-      // Fecha a janela atual do popup
       window.close();
     } catch (error) {
       console.error("Erro ao abrir/focar janela:", error);
@@ -74,28 +69,28 @@
     <div class="flex items-center space-x-2">
       <FlagIcons />
       {#if !isPopup}
-      <button
-        class="p-2 border-none rounded-lg {isDarkMode
-          ? 'hover:bg-gray-700'
-          : 'hover:bg-gray-100'}"
-        on:click={openInNewWindow}
-        title={$t("header.openInNewWindow")}
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke-width="1.5"
-          stroke="currentColor"
-          class="w-5 h-5 {isDarkMode ? 'text-gray-300' : 'text-gray-600'}"
+        <button
+          class="p-2 border-none rounded-lg {isDarkMode
+            ? 'hover:bg-gray-700'
+            : 'hover:bg-gray-100'}"
+          on:click={openInNewWindow}
+          title={$t("header.openInNewWindow")}
         >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"
-          />
-        </svg>
-      </button>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke-width="1.5"
+            stroke="currentColor"
+            class="w-5 h-5 {isDarkMode ? 'text-gray-300' : 'text-gray-600'}"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"
+            />
+          </svg>
+        </button>
       {/if}
       <button
         class="p-2 border-none rounded-lg {isDarkMode

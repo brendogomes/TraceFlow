@@ -3,7 +3,6 @@
   import { fly, slide } from "svelte/transition";
   import html2canvas from "html2canvas";
   import { t, locale } from "svelte-i18n";
-  import FlagIcons from "./components/FlagIcons.svelte";
   import Header from "./components/Header.svelte";
 
   let requests = [];
@@ -14,16 +13,15 @@
   let debounceTimeout;
   let currentTabId = null;
   let messageListener;
-  let expandedRequestId = null; // Para controlar qual card está expandido
+  let expandedRequestId = null;
   let isDarkMode = false;
   let copiedStates = {};
   let searchQuery = "";
-  let statusFilter = "all"; // novo estado para o filtro
+  let statusFilter = "all";
   let requestListContainer;
   let port;
   let requestDetailsElement;
 
-  // Função para salvar as requests no sessionStorage
   function saveRequests(updatedRequests) {
     try {
       sessionStorage.setItem(
@@ -35,36 +33,30 @@
     }
   }
 
-  // Função para carregar as requests do sessionStorage
   function loadRequests() {
     try {
       const savedRequests = sessionStorage.getItem(`requests_${currentTabId}`);
       if (savedRequests) {
         requests = JSON.parse(savedRequests);
       } else {
-        // Se não houver requests salvas, solicita ao background
         requestInitialRequests();
       }
     } catch (error) {
       console.error("Error loading requests:", error);
-      // Em caso de erro, solicita ao background
       requestInitialRequests();
     }
   }
 
-  // Função para solicitar requests iniciais
   function requestInitialRequests() {
     port.postMessage({ type: "GET_REQUESTS" });
   }
 
-  // Função para limpar as requests quando mudar de aba
   function clearPreviousTabRequests(previousTabId) {
     if (previousTabId) {
       sessionStorage.removeItem(`requests_${previousTabId}`);
     }
   }
 
-  // Configura o listener de mensagens
   function setupMessageListener() {
     if (messageListener) {
       chrome.runtime.onMessage.removeListener(messageListener);
@@ -72,8 +64,6 @@
 
     messageListener = (message, sender) => {
       if (message.type === "REQUEST_UPDATE") {
-        // Se a mensagem vier de uma aba (sender.tab existe)
-        // E for a aba que estamos monitorando
         if (
           (!sender.tab && currentTabId) ||
           (sender.tab && sender.tab.id === currentTabId)
@@ -87,10 +77,8 @@
     chrome.runtime.onMessage.addListener(messageListener);
   }
 
-  // Função para atualizar a aba atual
   async function updateCurrentTab() {
     try {
-      // Quando em uma janela popup, queremos a aba ativa da janela principal
       const [tab] = await chrome.tabs.query({
         active: true,
         lastFocusedWindow: true,
@@ -108,20 +96,16 @@
     }
   }
 
-  // Função para atualizar as requests
   function updateRequests(newRequests) {
-    // Se tiver um card expandido, guarda as novas requests
     if (expandedRequestId) {
       pendingRequests = newRequests;
       return;
     }
 
-    // Se não tiver card expandido, atualiza normalmente
     requests = newRequests;
     pendingRequests = [];
   }
 
-  // Função de debounce para o filtro
   function updateDebouncedFilter(value) {
     clearTimeout(debounceTimeout);
     debounceTimeout = setTimeout(() => {
@@ -129,15 +113,12 @@
     }, 500);
   }
 
-  // Atualiza o debounced filter quando o filtro mudar
   $: {
     updateDebouncedFilter(filter);
   }
 
-  // Função para filtrar as requests
   $: filteredRequests = requests.filter((request) => {
     expandedRequestId = null;
-    // Primeiro aplica o filtro de status
     if (
       statusFilter === "error" &&
       (request.status === "pending" || request.status < 400)
@@ -151,7 +132,6 @@
       return false;
     }
 
-    // Depois aplica o filtro de texto se existir
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase().trim();
       return (
@@ -249,7 +229,6 @@
     }
   }
 
-  // Função para copiar para o clipboard
   async function copyToClipboard(text, id) {
     try {
       await navigator.clipboard.writeText(text);
@@ -262,7 +241,6 @@
     }
   }
 
-  // Detecta o tema do sistema
   function detectSystemTheme() {
     if (
       window.matchMedia &&
@@ -272,7 +250,6 @@
     }
   }
 
-  // Observer para mudanças no tema do sistema
   function watchSystemTheme() {
     window
       .matchMedia("(prefers-color-scheme: dark)")
@@ -281,7 +258,6 @@
       });
   }
 
-  // Função para formatar a URL sem os query params
   function formatUrl(url) {
     try {
       const urlObj = new URL(url);
@@ -291,19 +267,15 @@
     }
   }
 
-  // Função para tirar screenshot do card de detalhes
   async function takeScreenshot() {
     if (!expandedRequestId || !requestDetailsElement) return;
 
     try {
-      // Salva o padding original
       const originalPadding = requestDetailsElement.style.padding;
 
-      // Adiciona padding temporário
       requestDetailsElement.style.padding = "16px";
 
       try {
-        // Configura opções para melhor qualidade
         const canvas = await html2canvas(requestDetailsElement, {
           scale: 2,
           logging: false,
@@ -314,15 +286,12 @@
           scrollY: -window.scrollY,
         });
 
-        // Converte o canvas para blob
         const blob = await new Promise((resolve) => {
           canvas.toBlob(resolve, "image/png");
         });
 
-        // Cria um objeto URL para download
         const url = URL.createObjectURL(blob);
 
-        // Cria um link temporário para download
         const a = document.createElement("a");
         const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
         const request = requests.find(
@@ -332,10 +301,8 @@
         a.href = url;
         a.click();
 
-        // Limpa o objeto URL
         URL.revokeObjectURL(url);
       } finally {
-        // Restaura o padding original
         requestDetailsElement.style.padding = originalPadding;
       }
     } catch (error) {
@@ -343,17 +310,14 @@
     }
   }
 
-  // Carrega a preferência de idioma ao iniciar
   onMount(() => {
     const savedLanguage = localStorage.getItem("traceflow_language");
     if (savedLanguage) {
       $locale = savedLanguage;
     }
 
-    // Conecta com o background script
     port = chrome.runtime.connect();
 
-    // Listener para atualizações de requisições
     port.onMessage.addListener((message) => {
       if (message.type === "REQUEST_UPDATE") {
         updateRequests(message.requests);
@@ -361,22 +325,18 @@
       }
     });
 
-    // Inicializa a aba atual e configura os listeners
     updateCurrentTab();
 
-    // Listener para mudança de aba
     chrome.tabs.onActivated.addListener(async (activeInfo) => {
       await updateCurrentTab();
     });
 
-    // Listener para atualização de aba
     chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
       if (changeInfo.status === "complete" && tabId === currentTabId) {
         await updateCurrentTab();
       }
     });
 
-    // Atualiza periodicamente para garantir que as requests não se percam
     const intervalId = setInterval(async () => {
       await updateCurrentTab();
     }, 5000);
@@ -567,7 +527,8 @@
                             <span
                               class="ml-2 break-all {isDarkMode
                                 ? 'text-gray-400'
-                                : 'text-gray-600'}">{formatUrl(request.url)}</span
+                                : 'text-gray-600'}"
+                              >{formatUrl(request.url)}</span
                             >
                           </div>
 
@@ -580,7 +541,8 @@
                             <span
                               class="ml-2 break-all {isDarkMode
                                 ? 'text-gray-400'
-                                : 'text-gray-600'}">{request.pagePath || "/"}</span
+                                : 'text-gray-600'}"
+                              >{request.pagePath || "/"}</span
                             >
                           </div>
 
