@@ -46,12 +46,24 @@ function formatDate(date) {
 // Função para notificar o popup sobre mudanças nas requisições
 async function notifyRequestUpdate() {
   try {
+    const requests = currentTabId ? requestsByTab.get(currentTabId) || [] : [];
+    
+    // Notifica via port (para o popup)
     if (port) {
       port.postMessage({
         type: "REQUEST_UPDATE",
-        requests: currentTabId ? requestsByTab.get(currentTabId) || [] : [],
+        requests: requests,
       });
     }
+
+    // Notifica todas as janelas abertas
+    chrome.runtime.sendMessage({
+      type: "REQUEST_UPDATE",
+      requests: requests,
+    }).catch(() => {
+      // Ignora erros de "Could not establish connection" que são normais
+      // quando não há listeners
+    });
   } catch (error) {
     console.debug("Erro ao notificar popup:", error);
   }

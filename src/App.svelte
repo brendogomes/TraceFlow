@@ -70,13 +70,17 @@
       chrome.runtime.onMessage.removeListener(messageListener);
     }
 
-    messageListener = (message, sender, sendResponse) => {
-      if (
-        message.type === "REQUEST_UPDATE" &&
-        (!sender.tab || sender.tab.id === currentTabId)
-      ) {
-        updateRequests(message.requests);
-        saveRequests(message.requests);
+    messageListener = (message, sender) => {
+      if (message.type === "REQUEST_UPDATE") {
+        // Se a mensagem vier de uma aba (sender.tab existe)
+        // E for a aba que estamos monitorando
+        if (
+          (!sender.tab && currentTabId) ||
+          (sender.tab && sender.tab.id === currentTabId)
+        ) {
+          updateRequests(message.requests);
+          saveRequests(message.requests);
+        }
       }
     };
 
@@ -86,10 +90,12 @@
   // Função para atualizar a aba atual
   async function updateCurrentTab() {
     try {
+      // Quando em uma janela popup, queremos a aba ativa da janela principal
       const [tab] = await chrome.tabs.query({
         active: true,
-        currentWindow: true,
+        lastFocusedWindow: true,
       });
+
       if (tab && tab.id !== currentTabId) {
         const previousTabId = currentTabId;
         currentTabId = tab.id;
@@ -337,13 +343,6 @@
     }
   }
 
-  // Função para alternar o idioma
-  function toggleLanguage() {
-    $locale = $locale === "pt-BR" ? "en" : "pt-BR";
-    // Salva a preferência no localStorage
-    localStorage.setItem("traceflow_language", $locale);
-  }
-
   // Carrega a preferência de idioma ao iniciar
   onMount(() => {
     const savedLanguage = localStorage.getItem("traceflow_language");
@@ -407,13 +406,9 @@
   });
 </script>
 
-<main class="w-[100vw] h-[600px] {isDarkMode ? 'bg-gray-900' : 'bg-white'}">
+<main class="w-[100vw] h-[100vh] {isDarkMode ? 'bg-gray-900' : 'bg-white'}">
   <div class="h-full flex flex-col">
-    <Header 
-      bind:isDarkMode
-      bind:statusFilter
-      bind:searchQuery
-    />
+    <Header bind:isDarkMode bind:statusFilter bind:searchQuery />
 
     <!-- Timeline -->
     <div

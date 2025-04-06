@@ -3,7 +3,7 @@
   "name": "TraceFlow",
   "version": "1.0.0",
   "description": "Extensão de rastreamento de solicitação HTTP",
-  "permissions": ["webRequest", "storage", "activeTab", "tabs", "debugger"],
+  "permissions": ["webRequest", "storage", "activeTab", "tabs", "debugger", "windows"],
   "host_permissions": ["<all_urls>"],
   "action": {
     "default_popup": "index.html",
