@@ -1,4 +1,3 @@
-// Tipos de recursos a serem ignorados
 const ignoredTypes = [
   "stylesheet",
   "image",
