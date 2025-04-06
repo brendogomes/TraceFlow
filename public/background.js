@@ -1,3 +1,4 @@
+// Resource types that should not be intercepted by the extension
 const ignoredTypes = [
   "stylesheet",
   "image",
@@ -15,11 +16,12 @@ const ignoredTypes = [
 
 const MAX_REQUESTS = 100;
 
-let requestsByTab = new Map();
-let activeRequests = new Map();
-let currentTabId = null;
-let port = null;
-let debuggerAttached = new Set();
+// Main state management
+let requestsByTab = new Map();  // Stores requests for each tab
+let activeRequests = new Map(); // Tracks in-progress requests
+let currentTabId = null;        // Currently focused tab
+let port = null;               // Communication port with popup
+let debuggerAttached = new Set(); // Tracks tabs with attached debugger
 
 function isApiRequest(details) {
   if (ignoredTypes.includes(details.type)) {
@@ -68,7 +70,7 @@ async function saveRequestsToStorage() {
       currentTabId: currentTabId,
     });
   } catch (error) {
-    console.error("Erro ao salvar dados no storage:", error);
+    console.error("Error saving data to storage:", error);
   }
 }
 
@@ -85,12 +87,13 @@ async function loadRequestsFromStorage() {
       currentTabId = data.currentTabId;
     }
   } catch (error) {
-    console.error("Erro ao carregar dados do storage:", error);
+    console.error("Error loading data from storage:", error);
   }
 }
 
 loadRequestsFromStorage();
 
+// Attaches Chrome debugger to intercept Network events and capture request/response bodies
 async function attachDebugger(tabId) {
   if (debuggerAttached.has(tabId)) return;
 
@@ -99,7 +102,8 @@ async function attachDebugger(tabId) {
     await chrome.debugger.sendCommand({ tabId }, "Network.enable");
     debuggerAttached.add(tabId);
 
-    const debuggerListener = async (source, method, params) => {
+          // Handle Network events from Chrome debugger
+      const debuggerListener = async (source, method, params) => {
       if (source.tabId !== tabId) return;
 
       const tabRequests = requestsByTab.get(tabId);
@@ -200,6 +204,7 @@ chrome.runtime.onConnect.addListener((newPort) => {
   notifyRequestUpdate();
 });
 
+// Capture initial request details before they are sent
 chrome.webRequest.onBeforeRequest.addListener(
   async (details) => {
     try {
@@ -245,7 +250,7 @@ chrome.webRequest.onBeforeRequest.addListener(
       }
       await saveRequestsToStorage();
     } catch (error) {
-      console.error("Erro ao capturar requisição:", error);
+      console.error("Error capturing request:", error);
     }
   },
   { urls: ["<all_urls>"] }
@@ -256,6 +261,7 @@ function updateBadge(count) {
   chrome.action.setBadgeBackgroundColor({ color: "#666666" });
 }
 
+// Update request status when response is received
 chrome.webRequest.onCompleted.addListener(
   async (details) => {
     try {
@@ -274,12 +280,13 @@ chrome.webRequest.onCompleted.addListener(
         await saveRequestsToStorage();
       }
     } catch (error) {
-      console.error("Erro ao capturar status da resposta:", error);
+      console.error("Error capturing response status:", error);
     }
   },
   { urls: ["<all_urls>"] }
 );
 
+// Handle failed requests and network errors
 chrome.webRequest.onErrorOccurred.addListener(
   async (details) => {
     try {
@@ -298,12 +305,13 @@ chrome.webRequest.onErrorOccurred.addListener(
         await saveRequestsToStorage();
       }
     } catch (error) {
-      console.error("Erro ao capturar erro nas requisições:", error);
+      console.error("Error capturing request errors:", error);
     }
   },
   { urls: ["<all_urls>"] }
 );
 
+// Reset and initialize state when user switches tabs
 chrome.tabs.onActivated.addListener(async (activeInfo) => {
   try {
     currentTabId = activeInfo.tabId;
@@ -321,7 +329,7 @@ chrome.tabs.onActivated.addListener(async (activeInfo) => {
     }
     await attachDebugger(currentTabId);
   } catch (error) {
-    console.error("Erro ao mudar de aba:", error);
+    console.error("Error switching tabs:", error);
   }
 });
 
@@ -331,6 +339,6 @@ chrome.tabs.onRemoved.addListener(async (tabId) => {
     requestsByTab.delete(tabId);
     await saveRequestsToStorage();
   } catch (error) {
-    console.error("Erro ao monitorar fechamento de aba:", error);
+    console.error("Error monitoring tab closure:", error);
   }
 });
