@@ -36,8 +36,10 @@
         await chrome.windows.create({
           url: traceflowUrl,
           type: "popup",
-          width: 800,
-          height: 600
+          width: 1200,
+          height: 800,
+          left: 50,
+          top: 50
         });
       }
 
