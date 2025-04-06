@@ -27,6 +27,7 @@
     "body": "Corpo",
     "responseBody": "Corpo da Resposta",
     "response": "Resposta",
+    "path": "Caminho",
     "copy": {
       "url": "Copiar URL",
       "curl": "Copiar como cURL",

@@ -27,6 +27,7 @@
     "body": "Body",
     "responseBody": "Response Body",
     "response": "Response",
+    "path": "Path",
     "copy": {
       "url": "Copy URL",
       "curl": "Copy as cURL",

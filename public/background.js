@@ -246,6 +246,17 @@ chrome.webRequest.onBeforeRequest.addListener(
         status: "pending"
       };
 
+      // Obtém o path da página atual
+      try {
+        const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+        if (tab && tab.url) {
+          request.pagePath = new URL(tab.url).pathname;
+        }
+      } catch (error) {
+        console.debug("Erro ao obter path da página:", error);
+        request.pagePath = "/";
+      }
+
       const tabRequests = requestsByTab.get(details.tabId);
       
       // Adiciona a nova requisição no início

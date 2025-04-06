@@ -567,8 +567,20 @@
                             <span
                               class="ml-2 break-all {isDarkMode
                                 ? 'text-gray-400'
-                                : 'text-gray-600'}"
-                              >{formatUrl(request.url)}</span
+                                : 'text-gray-600'}">{formatUrl(request.url)}</span
+                            >
+                          </div>
+
+                          <div class="flex">
+                            <span
+                              class="font-medium {isDarkMode
+                                ? 'text-gray-400'
+                                : 'text-gray-600'}">{$t("request.path")}:</span
+                            >
+                            <span
+                              class="ml-2 break-all {isDarkMode
+                                ? 'text-gray-400'
+                                : 'text-gray-600'}">{request.pagePath || "/"}</span
                             >
                           </div>
 
