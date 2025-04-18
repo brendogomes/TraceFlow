@@ -1,6 +1,7 @@
 # TraceFlow
 
 A powerful Chrome extension for monitoring and debugging HTTP requests in real-time.
+https://chromewebstore.google.com/detail/ggkgonegmeebhadenflogiokcjhaimed?utm_source=item-share-cb
 
 ## Features
 
